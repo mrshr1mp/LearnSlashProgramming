@@ -1,0 +1,20 @@
+date,category,item,amount
+2026-10-01,food,pizza,12.50
+2026-10-01,games,controller,59.99
+2026-10-02,food,tacos,8.25
+2026-10-02,transport,bus pass,20
+2026-10-03,books,"python book, used",35
+2026-10-03,food,coffee,
+2026-10-04,games,skin,oops
+2026-10-05,food,burger,10.10
+2026-10-06,music,concert ticket,45.00
+2026-10-07,food,groceries,38.42
+2026-10-08,games,indie game,14.99
+2026-10-09,food,boba,6.75
+2026-10-10,tech,"usb cable, 2m",9.99
+2026-10-11,food,pizza again,13.00
+2026-10-12,transport,gas,32.10
+2026-10-13,games,season pass,24.99
+2026-10-14,food,,4.50
+2026-10-15,tech,mouse,N/A
+2026-10-16,food,sushi,22.80

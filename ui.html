@@ -1,0 +1,1143 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>learn/programming</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&family=Space+Grotesk:wght@500;700&display=swap">
+<script src="https://cdn.jsdelivr.net/npm/marked@12.0.2/marked.min.js"></script>
+<style>
+  :root {
+    --bg: #0a0708; --surface: #120d0f; --surface-2: #1a1316; --raised: #231a1e; --line: #2e2226; --line-2: #3d2c32;
+    --text: #f4ecee; --soft: #d9cbcf; --muted: #a3898f; --faint: #6f5a60;
+    --red: #e11d48; --red-hi: #ff4d6d; --red-deep: #7f0d26;
+    --gold: #f7b538; --gold-hi: #ffd479; --pass: #34d399; --fail: #ff5470; --todo: #f7b538;
+    --mono: "JetBrains Mono", "Cascadia Code", Consolas, monospace;
+    --display: "Space Grotesk", "Inter", "Segoe UI", sans-serif;
+  }
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  html, body { margin: 0; height: 100%; }
+  body { background: var(--bg); color: var(--text); font: 16px/1.65 Inter, "Segoe UI", system-ui, sans-serif; overflow: hidden; }
+  button { font: inherit; color: inherit; }
+  a { color: inherit; text-decoration: none; }
+  code, pre, kbd { font-family: var(--mono); }
+  ::selection { background: var(--red); color: #fff; }
+  ::-webkit-scrollbar { width: 10px; height: 10px; }
+  ::-webkit-scrollbar-thumb { background: var(--line-2); border-radius: 10px; border: 2px solid var(--bg); }
+  ::-webkit-scrollbar-track { background: transparent; }
+
+  .app { display: grid; grid-template-columns: 300px 1fr; height: 100vh; }
+
+  /* ---------- sidebar ---------- */
+  .side { background: #0e0a0c; border-right: 1px solid var(--line); display: flex; flex-direction: column; min-height: 0; }
+  .brand { display: flex; align-items: center; gap: 10px; padding: 20px 20px 12px; font-family: var(--display); font-weight: 700; font-size: 17px; }
+  .logo { width: 30px; height: 30px; border-radius: 8px; display: grid; place-items: center; font: 700 13px var(--mono); background: var(--red); }
+  .brand span { color: var(--red-hi); }
+  .nav { display: flex; flex-direction: column; gap: 2px; padding: 4px 10px 10px; border-bottom: 1px solid var(--line); }
+  .nav a { display: flex; align-items: center; gap: 12px; padding: 9px 12px; border-radius: 10px; color: var(--muted); font-weight: 500; font-size: 15px; }
+  .nav a:hover { background: var(--surface-2); color: var(--text); }
+  .nav a.active { background: var(--surface-2); color: var(--text); }
+  .nav a.active .ni { color: var(--red-hi); }
+  .nav .ni { width: 20px; text-align: center; font-size: 16px; }
+
+  #course-side { display: flex; flex-direction: column; min-height: 0; flex: 1; }
+  #course-side[hidden] { display: none; }
+  .course-title { display: flex; align-items: center; gap: 10px; padding: 14px 20px 0; font: 700 15px var(--display); color: var(--soft); }
+  .player { margin: 10px 16px 8px; padding: 14px 16px 13px; border-radius: 14px; background: linear-gradient(135deg, #2a0f17, #161012 70%); border: 1px solid #3f1a24; }
+  .player .label { font-size: 11px; text-transform: uppercase; letter-spacing: 2px; color: var(--red-hi); font-weight: 600; }
+  .player .rank { font-family: var(--display); font-size: 22px; font-weight: 700; margin: 1px 0 8px; }
+  .player .xp { font-size: 13px; color: var(--muted); display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 7px; }
+  .player .xp b { color: var(--gold-hi); font: 700 17px var(--display); }
+  .bar { height: 7px; border-radius: 6px; background: #0a0607; overflow: hidden; }
+  .bar > div { height: 100%; width: 0; border-radius: 6px; background: linear-gradient(90deg, var(--red), var(--gold)); transition: width 1s cubic-bezier(.2,.8,.2,1); }
+  .player.bump { animation: bump .6s ease; }
+  @keyframes bump { 35% { transform: scale(1.03); } }
+
+  .list { overflow-y: auto; padding: 0 10px 24px; flex: 1; }
+  .chapter { margin-top: 8px; }
+  .ch-head { display: flex; align-items: center; gap: 10px; width: 100%; padding: 8px 10px 6px; border: 0; background: none; cursor: pointer; text-align: left; }
+  .ch-head .ch-name { font: 600 11.5px var(--display); text-transform: uppercase; letter-spacing: 1.8px; color: var(--soft); flex: 1; }
+  .ch-head .ch-count { font-size: 12px; color: var(--faint); font-family: var(--mono); }
+  .ch-head .caret { color: var(--faint); font-size: 10px; transition: transform .2s; }
+  .chapter.closed .caret { transform: rotate(-90deg); }
+  .ch-bar { height: 2px; margin: 0 10px 6px; background: var(--line); border-radius: 2px; overflow: hidden; }
+  .ch-bar > div { height: 100%; background: linear-gradient(90deg, var(--red), var(--gold)); }
+  .chapter.closed .items { display: none; }
+
+  .item { display: flex; align-items: center; gap: 12px; width: 100%; padding: 8px 10px; border: 0; background: none; border-radius: 10px; cursor: pointer; text-align: left; position: relative; }
+  .item:hover { background: var(--surface-2); }
+  .item.active { background: #2a1219; }
+  .item.active::before { content: ""; position: absolute; left: 0; top: 8px; bottom: 8px; width: 3px; border-radius: 3px; background: var(--red-hi); }
+  .dot { width: 28px; height: 28px; flex: none; border-radius: 50%; display: grid; place-items: center; font: 600 12px var(--mono); border: 1.5px solid var(--line-2); color: var(--faint); }
+  .item.started .dot { border-color: var(--red-hi); color: var(--red-hi); }
+  .item.done .dot { background: var(--gold); border-color: var(--gold); color: #2a1a00; font-size: 14px; }
+  .item .t { flex: 1; min-width: 0; }
+  .item .name { font-size: 14.5px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .item.done .name { color: var(--muted); }
+  .item .meta { font-size: 11.5px; color: var(--faint); display: flex; gap: 8px; align-items: center; }
+
+  .kind { display: inline-block; font: 700 10.5px var(--mono); letter-spacing: .8px; padding: 1px 7px; border-radius: 5px; line-height: 1.6; }
+  .k-LEARN { background: #ff8fab1f; color: #ff9fb6; } .k-FIX { background: #ff8a4c1f; color: #ffa070; }
+  .k-FILL { background: #f7b5381f; color: var(--gold); } .k-BUILD { background: #ff4d6d22; color: var(--red-hi); }
+  .k-PUZZLE { background: #c084fc22; color: #d3a6ff; } .k-REFACTOR { background: #2dd4bf1f; color: #5eead4; }
+  .k-TESTS { background: #a3e6351f; color: #bef264; }
+  .k-BOSS { background: linear-gradient(90deg, var(--red), var(--gold)); color: #1a0508; }
+
+  /* ---------- main ---------- */
+  .main { overflow-y: auto; min-height: 0; position: relative; background: radial-gradient(900px 480px at 85% -10%, #e11d480d, transparent 70%), var(--bg); }
+  .main::before { content: ""; position: absolute; inset: 0; height: 380px; pointer-events: none;
+                  background-image: linear-gradient(#ffffff05 1px, transparent 1px), linear-gradient(90deg, #ffffff05 1px, transparent 1px);
+                  background-size: 32px 32px; mask-image: linear-gradient(180deg, #000, transparent); -webkit-mask-image: linear-gradient(180deg, #000, transparent); }
+  .wrap { max-width: 900px; margin: 0 auto; padding: 34px 40px 120px; position: relative; }
+  .crumbs { font-size: 13.5px; color: var(--faint); margin-bottom: 14px; }
+  .crumbs a { color: var(--muted); }
+  .crumbs a:hover { color: var(--text); }
+  .eyebrow, .head .num { font: 600 12px var(--mono); letter-spacing: 2px; color: var(--red-hi); text-transform: uppercase; }
+  .head .num .done-tag { color: var(--gold); }
+  .page-title, .head h1 { margin: 6px 0 10px; font: 700 40px/1.1 var(--display); letter-spacing: -.5px; }
+  .lede { color: var(--muted); font-size: 17px; margin: 0 0 26px; max-width: 640px; }
+  .head .row { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; color: var(--muted); font-size: 14px; }
+  .head .xp-pill { color: var(--gold-hi); font-weight: 600; }
+  .head code { background: var(--surface-2); border: 1px solid var(--line); padding: 2px 8px; border-radius: 6px; font-size: 12.5px; color: var(--soft); }
+  .section-title { font: 700 13px var(--display); text-transform: uppercase; letter-spacing: 1.8px; color: var(--muted); margin: 34px 0 12px; display: flex; justify-content: space-between; align-items: baseline; }
+  .section-title a { font: 500 13px Inter, sans-serif; text-transform: none; letter-spacing: 0; color: var(--red-hi); }
+
+  .card { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 20px 22px; }
+  a.card { display: block; transition: border-color .15s, transform .15s; }
+  a.card:hover { border-color: #5a3b44; transform: translateY(-2px); }
+
+  /* dashboard */
+  .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+  .stat { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 14px 16px; }
+  .stat .v { font: 700 28px var(--display); line-height: 1.2; }
+  .stat .v.gold { color: var(--gold-hi); }
+  .stat .l { font-size: 13px; color: var(--muted); }
+  .continue { display: grid; grid-template-columns: 1fr auto; gap: 18px 24px; align-items: center; background: linear-gradient(135deg, #22101a, var(--surface) 60%); }
+  .continue .top { display: flex; align-items: center; gap: 14px; }
+  .icon-tile { width: 52px; height: 52px; flex: none; border-radius: 14px; display: grid; place-items: center; font-size: 28px; background: var(--raised); border: 1px solid var(--line-2); }
+  .continue h3 { margin: 0; font: 700 22px var(--display); }
+  .continue .sub { color: var(--muted); font-size: 14px; }
+  .next-up { grid-column: 1 / -1; display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-radius: 12px; background: #0b0809; border: 1px solid var(--line); }
+  .next-up .lbl { font: 600 11px var(--mono); letter-spacing: 1.5px; color: var(--faint); text-transform: uppercase; }
+  .next-up .tt { font-weight: 600; flex: 1; }
+  .chapters-mini { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 14px; }
+  .chapters-mini .n { font-size: 13px; color: var(--soft); display: flex; justify-content: space-between; margin-bottom: 5px; }
+  .chapters-mini .n span { color: var(--faint); font-family: var(--mono); font-size: 12px; }
+  .two { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .logo-img { display: block; object-fit: contain; }
+  .course-title .logo-img { width: 20px; height: 20px; }
+  .crumbs .logo-img { display: inline-block; width: 14px; height: 14px; vertical-align: -2px; }
+
+  /* activity heatmap */
+  .hm-top { display: flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }
+  .hm-top .total { font-size: 15px; color: var(--soft); }
+  .hm-top .total b { color: var(--text); font: 700 18px var(--display); }
+  .hm-top .streak { font-size: 13.5px; color: var(--muted); }
+  .hm-top .streak b { color: var(--gold-hi); }
+  .hm { max-width: 780px; }
+  .hm-months, .hm-grid { display: grid; grid-template-columns: repeat(var(--weeks), 1fr); gap: 4px; }
+  .hm-months { margin-left: 38px; margin-bottom: 4px; font-size: 11.5px; color: var(--muted); height: 16px; }
+  .hm-months span { white-space: nowrap; overflow: visible; }
+  .hm-body { display: flex; gap: 8px; }
+  .hm-days { width: 30px; display: grid; grid-template-rows: repeat(7, 1fr); gap: 4px; font-size: 11px; color: var(--faint); }
+  .hm-days span { display: flex; align-items: center; }
+  .hm-grid { flex: 1; grid-template-rows: repeat(7, auto); grid-auto-flow: column; }
+  .hm-cell { aspect-ratio: 1; border-radius: 3px; background: #1a1215; outline: 1px solid #ffffff06; outline-offset: -1px; }
+  .hm-cell.l1 { background: #4a1424; } .hm-cell.l2 { background: #7f1630; } .hm-cell.l3 { background: #c21a42; } .hm-cell.l4 { background: #ff4d6d; }
+  .hm-cell.future { background: transparent; outline: 0; }
+  .hm-cell.today { outline: 1.5px solid var(--gold); outline-offset: 0; }
+  .hm-foot { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; margin: 12px 0 0 38px; font-size: 12.5px; color: var(--faint); }
+  .legend { display: flex; align-items: center; gap: 4px; }
+  .legend .hm-cell { width: 12px; aspect-ratio: 1; }
+  .activity { list-style: none; margin: 0; padding: 0; }
+  .activity li { display: flex; gap: 12px; align-items: center; padding: 10px 0; border-bottom: 1px solid #ffffff08; font-size: 14.5px; }
+  .activity li:last-child { border-bottom: 0; }
+  .activity .ck { width: 26px; height: 26px; flex: none; border-radius: 50%; display: grid; place-items: center; background: #f7b5381c; color: var(--gold); font-size: 13px; }
+  .activity .what { flex: 1; min-width: 0; }
+  .activity .what div { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .activity .when { font-size: 12.5px; color: var(--faint); }
+  .activity .plus { color: var(--gold-hi); font: 600 13px var(--mono); }
+  .empty { color: var(--faint); font-size: 14.5px; padding: 6px 0; }
+
+  /* courses */
+  .course-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(330px, 1fr)); gap: 16px; }
+  .course-card { display: flex; flex-direction: column; gap: 14px; }
+  .course-card .top { display: flex; gap: 14px; align-items: center; }
+  .course-card h3 { margin: 0; font: 700 22px var(--display); }
+  .course-card .desc { color: var(--soft); font-size: 15px; margin: 0; }
+  .course-card .meta { color: var(--muted); font-size: 13.5px; }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .chip { font-size: 12.5px; padding: 3px 10px; border-radius: 999px; background: var(--surface-2); border: 1px solid var(--line); color: var(--soft); }
+  .chip b { color: var(--gold); font-weight: 600; }
+  .course-card .foot { display: flex; align-items: center; gap: 14px; margin-top: auto; }
+  .course-card .foot .bar { flex: 1; }
+  .course-card .pct { font: 600 13px var(--mono); color: var(--muted); }
+  .ghost-card { border-style: dashed; background: transparent; display: grid; place-items: center; text-align: center; color: var(--faint); min-height: 220px; }
+  .ghost-card .plus { font-size: 30px; }
+  .ghost-card code { color: var(--muted); }
+
+  /* achievements */
+  .badges { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; }
+  .badge { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 16px; display: flex; flex-direction: column; gap: 6px; }
+  .badge .em { width: 46px; height: 46px; border-radius: 12px; display: grid; place-items: center; font-size: 24px; background: #f7b5381a; border: 1px solid #f7b53855; }
+  .badge .bt { font-weight: 700; font-size: 15px; }
+  .badge .bd { font-size: 13px; color: var(--muted); }
+  .badge .bp { display: flex; align-items: center; gap: 8px; font: 12px var(--mono); color: var(--faint); margin-top: auto; padding-top: 6px; }
+  .badge .bp .bar { flex: 1; height: 5px; }
+  .badge.locked .em { filter: grayscale(1); opacity: .4; background: var(--surface-2); border-color: var(--line); }
+  .badge.locked .bt { color: var(--muted); }
+  .badge.got { border-color: #f7b53844; }
+  .badge.got .bp { color: var(--gold); }
+  .mini-badges { display: flex; flex-direction: column; gap: 10px; }
+  .mini-badges .badge { flex-direction: row; align-items: center; padding: 10px 12px; gap: 12px; }
+  .mini-badges .badge .em { width: 38px; height: 38px; font-size: 20px; flex: none; }
+
+  /* accounts + friends */
+  .nav .count { margin-left: auto; min-width: 20px; height: 20px; padding: 0 6px; border-radius: 10px; background: var(--red); color: #fff; font: 700 11.5px/20px var(--mono); text-align: center; }
+  .me-chip { margin-top: auto; display: flex; align-items: center; gap: 12px; padding: 14px 20px; border-top: 1px solid var(--line); }
+  .me-chip:hover, .me-chip.active { background: var(--surface-2); }
+  .me-chip b { display: block; font-size: 14.5px; }
+  .me-chip small { color: var(--faint); font-size: 12px; }
+  .avatar { width: 34px; height: 34px; flex: none; border-radius: 50%; display: grid; place-items: center; font: 700 15px var(--display);
+            background: linear-gradient(135deg, var(--red), #7f0d26); color: #fff; }
+  .avatar.ghost { background: var(--surface-2); color: var(--faint); border: 1px dashed var(--line-2); }
+  .avatar.big { width: 64px; height: 64px; font-size: 28px; }
+  .who { display: flex; align-items: center; gap: 16px; }
+  .who h3 { margin: 0; font: 700 22px var(--display); }
+  .sub { color: var(--muted); font-size: 14px; }
+  .account-card { display: flex; flex-direction: column; gap: 12px; max-width: 560px; }
+  .row-btns { display: flex; gap: 10px; }
+  .form { display: flex; flex-direction: column; gap: 14px; }
+  .form h3 { margin: 0; font: 700 20px var(--display); }
+  .form label { display: flex; flex-direction: column; gap: 6px; font-size: 13.5px; color: var(--soft); font-weight: 500; }
+  .form label small { color: var(--faint); font-weight: 400; }
+  input { font: inherit; color: var(--text); background: #0b0809; border: 1px solid var(--line-2); border-radius: 10px; padding: 10px 12px; outline: none; }
+  input:focus { border-color: var(--red-hi); }
+  .note-card { margin-top: 22px; }
+  .note-card h3 { margin: 0 0 6px; font: 700 16px var(--display); }
+  .note-card ul { margin: 0; padding-left: 20px; color: var(--soft); font-size: 14.5px; }
+  .note-card li { margin: 5px 0; }
+  .add-friend { display: flex; gap: 10px; padding: 14px; }
+  .add-friend input { flex: 1; }
+  .person { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid #ffffff08; }
+  .person:last-child { border-bottom: 0; }
+  .person.you b { color: var(--gold-hi); }
+  .person .place { width: 30px; text-align: center; font: 600 14px var(--mono); color: var(--faint); }
+  .person .xpv { font: 600 14px var(--mono); color: var(--gold-hi); margin-right: 6px; }
+  .ch-label { font: 600 11.5px var(--display); text-transform: uppercase; letter-spacing: 1.6px; color: var(--muted); margin: 16px 0 6px; display: flex; gap: 8px; }
+  .ch-label:first-child { margin-top: 0; }
+  .ch-label span { color: var(--faint); font-family: var(--mono); }
+  .fm { display: flex; align-items: center; gap: 12px; padding: 6px 0; }
+  .fm .dot { width: 24px; height: 24px; font-size: 11px; }
+  .fm.done .dot { background: var(--gold); border-color: var(--gold); color: #2a1a00; }
+  .fm .fm-t { flex: 1; font-size: 14.5px; }
+  .fm:not(.done) .fm-t { color: var(--faint); }
+  .btn.small { padding: 4px 10px; font-size: 13px; }
+  .locked-code { font-size: 12.5px; color: var(--faint); }
+  .code-modal { width: min(1200px, 94vw); max-height: 88vh; display: flex; flex-direction: column; background: var(--surface); border: 1px solid var(--line-2); border-radius: 18px; overflow: hidden; }
+  .cm-head { display: flex; justify-content: space-between; align-items: center; gap: 16px; padding: 16px 20px; border-bottom: 1px solid var(--line); }
+  .cm-head h3 { margin: 2px 0 0; font: 700 22px var(--display); }
+  .cm-cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 1px; background: var(--line); overflow: auto; }
+  .cm-col { background: var(--surface); min-width: 0; display: flex; flex-direction: column; }
+  .cm-label { padding: 10px 16px; font-weight: 600; font-size: 14px; border-bottom: 1px solid var(--line); }
+  .cm-label code { color: var(--muted); font-size: 12.5px; margin-left: 6px; }
+  .cm-col pre { margin: 0; padding: 14px 16px; overflow: auto; font-size: 13.5px; line-height: 1.55; color: #f1e4e7; background: #070506; flex: 1; }
+
+  /* ---------- mission view ---------- */
+  .actions { position: sticky; top: 0; z-index: 5; display: flex; gap: 10px; align-items: center; flex-wrap: wrap;
+             margin: 22px -14px 6px; padding: 12px 14px; background: #0a0708e6; backdrop-filter: blur(8px); border-bottom: 1px solid var(--line); }
+  .btn { border: 1px solid var(--line-2); background: var(--surface-2); padding: 9px 16px; border-radius: 10px; cursor: pointer; font-weight: 600; font-size: 14.5px;
+         display: inline-flex; gap: 8px; align-items: center; transition: transform .12s, background .15s, border-color .15s; white-space: nowrap; }
+  .btn:hover { border-color: #5a3b44; background: var(--raised); transform: translateY(-1px); }
+  .btn:active { transform: translateY(0); }
+  .btn.primary, .btn.check { background: var(--red); border-color: var(--red); color: #fff; }
+  .btn.primary:hover, .btn.check:hover { background: #f02a56; border-color: #f02a56; }
+  .btn.check { padding: 10px 22px; font-size: 15.5px; }
+  .btn:disabled { opacity: .65; cursor: wait; transform: none; }
+  .btn.shake { animation: shake .45s; }
+  @keyframes shake { 20%, 60% { transform: translateX(-7px); } 40%, 80% { transform: translateX(7px); } }
+  .spin { width: 14px; height: 14px; border: 2px solid #ffffff55; border-top-color: #fff; border-radius: 50%; animation: spin .7s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .hint-text { font-size: 13px; color: var(--faint); }
+  .spacer { flex: 1; }
+  kbd { font-size: 10.5px; padding: 1px 5px; border-radius: 4px; border: 1px solid #ffffff55; opacity: .85; }
+  .icon-btn { border: 0; background: none; cursor: pointer; font-size: 17px; opacity: .6; padding: 4px 8px; }
+  .icon-btn:hover { opacity: 1; }
+
+  .results { margin: 18px 0 8px; border: 1px solid var(--line); border-radius: 16px; background: var(--surface); overflow: hidden; }
+  .results.pass { border-color: #34d39966; }
+  .results.fail { border-color: #ff547044; }
+  .r-head { display: flex; align-items: center; gap: 14px; padding: 14px 18px; border-bottom: 1px solid var(--line); }
+  .r-head .big { font: 700 18px var(--display); }
+  .pips { display: flex; gap: 4px; margin-left: auto; flex-wrap: wrap; justify-content: flex-end; max-width: 50%; }
+  .pip { width: 18px; height: 7px; border-radius: 4px; background: var(--line); transition: background .2s; }
+  .pip.PASS { background: var(--pass); } .pip.FAIL, .pip.CRASH { background: var(--fail); } .pip.TODO { background: var(--todo); }
+  .test { padding: 12px 18px; border-bottom: 1px solid #ffffff08; display: grid; grid-template-columns: 26px 1fr; gap: 4px 10px; animation: rise .35s both; }
+  .test:last-child { border-bottom: 0; }
+  @keyframes rise { from { opacity: 0; transform: translateY(6px); } }
+  .test .ic { font-weight: 800; font-size: 16px; line-height: 1.5; }
+  .test.PASS .ic { color: var(--pass); } .test.FAIL .ic, .test.CRASH .ic { color: var(--fail); } .test.TODO .ic { color: var(--todo); }
+  .test .tn { font-weight: 600; }
+  .test .tn small { font-weight: 400; color: var(--muted); margin-left: 6px; }
+  .test .body { grid-column: 2; font-size: 14.5px; color: var(--soft); }
+  .ge { display: grid; grid-template-columns: 110px 1fr; gap: 5px 12px; margin-top: 8px; font-family: var(--mono); font-size: 13px; }
+  .ge > div:nth-child(odd) { color: var(--muted); font: 13px Inter, sans-serif; padding-top: 3px; }
+  .ge .got { background: #ff54700f; border-left: 3px solid var(--fail); padding: 3px 10px; border-radius: 4px; white-space: pre-wrap; word-break: break-word; }
+  .ge .want { background: #34d3990f; border-left: 3px solid var(--pass); padding: 3px 10px; border-radius: 4px; white-space: pre-wrap; word-break: break-word; }
+  .note { margin: 8px 0 0; padding: 8px 12px; border-radius: 8px; background: #f7b53814; border: 1px solid #f7b53840; color: #f6e2bd; font-size: 14px; }
+  .note code { font-size: 12.5px; color: var(--gold-hi); }
+  .err { margin-top: 8px; border-radius: 12px; background: #ff54700b; border: 1px solid #ff547033; padding: 12px 14px; }
+  .err .etype { font-family: var(--mono); font-weight: 700; color: var(--fail); }
+  .err .emsg { font-family: var(--mono); font-size: 13px; color: var(--text); }
+  .err .explain { margin: 6px 0 0; color: #f6d3da; font-size: 14.5px; }
+  .err .where { margin-top: 10px; font-size: 13.5px; color: var(--muted); }
+  .err pre.line { margin: 4px 0 8px; padding: 8px 12px; background: #070506; border: 1px solid var(--line); border-radius: 8px; overflow-x: auto; font-size: 13px; }
+  .linkbtn { background: none; border: 0; color: var(--red-hi); cursor: pointer; padding: 0; font-weight: 600; font-size: 13.5px; }
+  .linkbtn:hover { text-decoration: underline; }
+  details.raw { padding: 10px 18px 14px; border-top: 1px solid var(--line); }
+  details.raw summary { cursor: pointer; color: var(--muted); font-size: 13px; }
+  details.raw pre, .test pre.detail { white-space: pre-wrap; font-size: 12.5px; background: #070506; padding: 10px 12px; border-radius: 8px; overflow-x: auto; color: var(--soft); border: 1px solid var(--line); }
+  .tip { font-size: 14px; color: var(--muted); border-top: 1px solid var(--line); border-bottom: 0; }
+  .tip b { color: var(--text); }
+
+  .brief { margin-top: 20px; font-size: 16.5px; }
+  .brief > p:first-child { font-size: 18px; color: var(--text); }
+  .brief h2 { font: 700 24px var(--display); margin: 44px 0 12px; display: flex; align-items: center; gap: 12px; }
+  .brief h2::before { content: ""; width: 5px; height: 22px; border-radius: 3px; background: var(--red); }
+  .brief h3 { font: 700 18px var(--display); margin: 26px 0 8px; }
+  .brief p, .brief li { color: var(--soft); }
+  .brief li { margin: 4px 0; }
+  .brief li::marker { color: var(--red-hi); }
+  .brief strong { color: #fff; }
+  .brief a { color: var(--red-hi); text-underline-offset: 3px; text-decoration: underline; }
+  .brief :not(pre) > code { background: #2a161c; border: 1px solid #3f2129; padding: 1px 6px; border-radius: 6px; font-size: .86em; color: #ffc2cd; }
+  .brief pre { background: #070506; border: 1px solid var(--line); border-left: 3px solid var(--red); border-radius: 10px; padding: 14px 18px; overflow-x: auto; font-size: 14px; line-height: 1.6; color: #f1e4e7; }
+  .brief table { border-collapse: separate; border-spacing: 0; width: 100%; margin: 14px 0; font-size: 15px; border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
+  .brief th, .brief td { text-align: left; padding: 9px 14px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  .brief tr:last-child td { border-bottom: 0; }
+  .brief th { background: var(--surface-2); color: var(--muted); font: 600 11.5px var(--mono); text-transform: uppercase; letter-spacing: 1px; }
+  .brief tbody tr:nth-child(even) { background: #ffffff04; }
+  .brief details { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; margin: 10px 0; padding: 0 16px; transition: border-color .2s; }
+  .brief details:hover { border-color: #5a4220; }
+  .brief details[open] { border-color: #f7b53866; background: #18120a; }
+  .brief summary { cursor: pointer; padding: 12px 0; font-weight: 600; color: var(--gold); list-style: none; }
+  .brief summary::-webkit-details-marker { display: none; }
+  .brief summary::before { content: "💡  "; }
+  .brief details[open] summary { border-bottom: 1px dashed #f7b53833; margin-bottom: 4px; }
+
+  /* ---------- toast + win ---------- */
+  .toast { position: fixed; left: 50%; bottom: 28px; transform: translate(-50%, 30px); opacity: 0; background: var(--raised); border: 1px solid var(--line-2);
+           padding: 10px 18px; border-radius: 12px; transition: .3s; pointer-events: none; z-index: 30; box-shadow: 0 10px 40px #000a; }
+  .toast.show { opacity: 1; transform: translate(-50%, 0); }
+  .overlay { position: fixed; inset: 0; background: #050304d9; display: grid; place-items: center; z-index: 40; animation: fade .3s; backdrop-filter: blur(3px); }
+  .overlay.hidden { display: none; }
+  @keyframes fade { from { opacity: 0; } }
+  .win { text-align: center; padding: 40px 56px 34px; border-radius: 22px; max-width: 92vw;
+         background: linear-gradient(180deg, #3a0c18, #170e11 60%); border: 1px solid #6b1c30; box-shadow: 0 30px 80px -30px #000; animation: pop .55s cubic-bezier(.2,1.5,.4,1); }
+  @keyframes pop { from { transform: scale(.6); opacity: 0; } }
+  .win .kicker { letter-spacing: 5px; font: 700 13px var(--mono); color: var(--gold); }
+  .win h2 { font: 700 34px var(--display); margin: 8px 0 2px; }
+  .win .gain { font: 800 56px var(--display); color: var(--gold-hi); margin: 6px 0; }
+  .win .rankup { margin: 8px auto 4px; padding: 9px 18px; border-radius: 12px; background: #e11d481f; border: 1px solid var(--red); font-weight: 700; display: inline-block; }
+  .win .win-ach { margin: 10px auto 0; display: flex; flex-direction: column; gap: 6px; align-items: center; }
+  .win .win-ach div { padding: 7px 14px; border-radius: 10px; background: #f7b53814; border: 1px solid #f7b53855; color: var(--gold-hi); font-weight: 600; font-size: 14.5px; }
+  .win .btns { display: flex; gap: 10px; justify-content: center; margin-top: 24px; flex-wrap: wrap; }
+  canvas#fx { position: fixed; inset: 0; pointer-events: none; z-index: 50; }
+
+  @media (max-width: 900px) { .stats { grid-template-columns: repeat(2, 1fr); } .two { grid-template-columns: 1fr; } }
+  @media (max-width: 820px) {
+    body { overflow: auto; }
+    .app { grid-template-columns: 1fr; height: auto; }
+    .side { border-right: 0; border-bottom: 1px solid var(--line); }
+    .nav { flex-direction: row; flex-wrap: wrap; }
+    .list { max-height: 300px; }
+    .wrap { padding: 22px 16px 80px; }
+    .page-title, .head h1 { font-size: 30px; }
+    .continue { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="side">
+    <div class="brand"><div class="logo">&gt;_</div>learn<span>/</span>programming</div>
+    <nav class="nav">
+      <a href="#/dashboard" data-page="dashboard"><span class="ni">⌂</span>Dashboard</a>
+      <a href="#/courses" data-page="courses"><span class="ni">▤</span>Courses</a>
+      <a href="#/friends" data-page="friends"><span class="ni">☺</span>Friends<span class="count" id="req-count" hidden></span></a>
+      <a href="#/achievements" data-page="achievements"><span class="ni">★</span>Achievements</a>
+    </nav>
+    <div id="course-side" hidden>
+      <div class="course-title" id="course-title"></div>
+      <div class="player" id="player">
+        <div class="label">Rank</div>
+        <div class="rank" id="rank">…</div>
+        <div class="xp"><span><b id="xp">0</b> XP</span><span id="next"></span></div>
+        <div class="bar"><div id="bar"></div></div>
+      </div>
+      <nav class="list" id="list"></nav>
+    </div>
+    <a class="me-chip" id="me-chip" href="#/account"></a>
+  </aside>
+  <main class="main" id="main"><div class="wrap" id="view"></div></main>
+</div>
+
+<div class="overlay hidden" id="win">
+  <div class="win">
+    <div class="kicker">MISSION COMPLETE</div>
+    <h2 id="win-title"></h2>
+    <div class="gain">+<span id="win-xp">0</span> XP</div>
+    <div id="win-rank" class="rankup" hidden></div>
+    <div id="win-ach" class="win-ach"></div>
+    <div class="btns">
+      <button class="btn primary" id="win-next">Next mission →</button>
+      <button class="btn" id="win-stay">Stay here</button>
+    </div>
+  </div>
+</div>
+<div class="overlay hidden" id="code-view">
+  <div class="code-modal">
+    <div class="cm-head"><div><div class="eyebrow" id="cm-kicker"></div><h3 id="cm-title"></h3></div>
+      <button class="btn" id="cm-close">Close</button></div>
+    <div class="cm-cols" id="cm-cols"></div>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+<canvas id="fx"></canvas>
+
+<script>
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const human = name => name.replace(/^test_/, "").replaceAll("_", " ");
+const pct = (a, b) => b ? Math.round(100 * a / b) : 0;
+const store = {  // localStorage can be unavailable; the app still works without it
+  get(k, d) { try { return localStorage.getItem(k) ?? d; } catch { return d; } },
+  set(k, v) { try { localStorage.setItem(k, v); } catch {} },
+};
+let S = null, O = null, ME = { signed_in: false }, route = {}, current = 1, lastCheck = null, busy = false;
+let soundOn = store.get("sound", "on") !== "off";
+let closed = new Set(JSON.parse(store.get("closedChapters", "[]")));
+
+async function api(path, body) {
+  const opts = { headers: { "X-Kit": "1" } };  // the local server refuses /api calls without it
+  if (body !== undefined) {
+    Object.assign(opts, { method: "POST", body: JSON.stringify(body) });
+    opts.headers["Content-Type"] = "application/json";
+  }
+  const res = await fetch(path, opts);
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || res.status);
+  return data;
+}
+const getOverview = () => api("/api/overview");
+
+/* ---------- shared helpers ---------- */
+function chapters(missions) {
+  const groups = [];
+  for (const m of missions) {
+    if (!groups.length || groups.at(-1).name !== m.chapter) groups.push({ name: m.chapter, missions: [] });
+    groups.at(-1).missions.push(m);
+  }
+  return groups;
+}
+const doneCount = ms => ms.filter(m => m.status === "done").length;
+const nextMission = ms => ms.find(m => m.status !== "done");
+const isoOf = t => `${t.getFullYear()}-${String(t.getMonth() + 1).padStart(2, "0")}-${String(t.getDate()).padStart(2, "0")}`;
+const todayIso = () => isoOf(new Date());
+// the course's real logo, falling back to its emoji if the image can't load (offline)
+const logo = (c, size = 28) => c.logo
+  ? `<img class="logo-img" src="${esc(c.logo)}" alt="${esc(c.name)}" width="${size}" height="${size}" onerror="this.replaceWith('${c.icon || "🎓"}')">`
+  : esc(c.icon || "🎓");
+const dayDiff = (a, b) => Math.round((Date.parse(b) - Date.parse(a)) / 864e5);
+
+function streaks(history) {
+  const days = [...new Set(history.map(h => h.date))].sort();
+  let best = 0, run = 0, prev = null;
+  for (const d of days) {
+    run = prev && dayDiff(prev, d) === 1 ? run + 1 : 1;
+    best = Math.max(best, run);
+    prev = d;
+  }
+  return { current: prev && dayDiff(prev, todayIso()) <= 1 ? run : 0, best };
+}
+
+// a day counts toward the streak if you ran a check or finished a mission
+const activeDays = ov => ov.history.concat(Object.keys(ov.checks).map(date => ({ date })));
+
+function whenLabel(iso) {
+  const d = dayDiff(iso, todayIso());
+  if (d === 0) return "today";
+  if (d === 1) return "yesterday";
+  return new Date(iso + "T12:00").toLocaleDateString(undefined, { month: "short", day: "numeric" });
+}
+
+function achievements(ov) {
+  const done = ov.courses.flatMap(c => c.missions.filter(m => m.status === "done"));
+  const { best } = streaks(ov.history);
+  const count = (goal, have) => ({ got: have >= goal, have: Math.min(have, goal), goal });
+  const list = [
+    { icon: "👣", title: "First Steps", desc: "Complete your first mission", ...count(1, done.length) },
+    { icon: "🔥", title: "On a Roll", desc: "Complete 5 missions", ...count(5, done.length) },
+    { icon: "⚡", title: "Unstoppable", desc: "Complete 15 missions", ...count(15, done.length) },
+    { icon: "⚔️", title: "Boss Slayer", desc: "Defeat a boss mission", ...count(1, done.filter(m => m.kind === "BOSS").length) },
+    { icon: "📅", title: "Three-Day Streak", desc: "Finish missions 3 days in a row", ...count(3, best) },
+    { icon: "🗓️", title: "Week Warrior", desc: "Finish missions 7 days in a row", ...count(7, best) },
+  ];
+  for (const c of ov.courses) {
+    for (const ch of chapters(c.missions)) {
+      list.push({ icon: "🏁", title: `${ch.name} Cleared`, desc: `Finish every mission in ${c.name}: ${ch.name}`, ...count(ch.missions.length, doneCount(ch.missions)) });
+    }
+    list.push({ icon: logo(c, 26), title: `${c.name} Graduate`, desc: `Finish the entire ${c.name} course`, ...count(c.missions.length, doneCount(c.missions)) });
+  }
+  return list;
+}
+
+/* ---------- routing ---------- */
+function parseRoute() {
+  const parts = location.hash.replace(/^#\/?/, "").split("/").filter(Boolean);
+  if (!parts.length || parts[0] === "dashboard") return { page: "dashboard" };
+  if (["courses", "achievements", "friends", "account"].includes(parts[0])) return { page: parts[0] };
+  if (parts[0] === "u") return { page: "user", name: decodeURIComponent(parts[1] || "") };
+  return { page: "course", track: decodeURIComponent(parts[0]), n: +parts[1] || null };
+}
+
+function renderMe() {
+  $("#me-chip").innerHTML = ME.signed_in
+    ? `<span class="avatar">${esc(ME.username[0].toUpperCase())}</span><span><b>${esc(ME.username)}</b><small>${ME.sync.error ? "⚠ not synced" : "Account"}</small></span>`
+    : `<span class="avatar ghost">?</span><span><b>Sign in</b><small>to add friends</small></span>`;
+  $("#me-chip").classList.toggle("active", route.page === "account");
+}
+
+async function render(keepScroll = false) {
+  route = parseRoute();
+  const navPage = { course: "courses", user: "friends" }[route.page] || route.page;
+  document.querySelectorAll(".nav a").forEach(a => a.classList.toggle("active", a.dataset.page === navPage));
+  try {
+    ME = await api("/api/me");
+    renderMe();
+    if (ME.signed_in) api("/api/friends").then(f => {  // badge for waiting friend requests
+      $("#req-count").hidden = !f.incoming.length;
+      $("#req-count").textContent = f.incoming.length;
+    }).catch(() => {});
+    if (["friends", "account", "user"].includes(route.page)) {
+      $("#course-side").hidden = true;
+      $("#view").innerHTML = `<div class="eyebrow">Loading…</div>`;
+      $("#view").innerHTML = await { friends: friendsPage, account: accountPage, user: userPage }[route.page]();
+    } else if (route.page === "course") {
+      if (S?.track !== route.track) lastCheck = null;
+      S = await api(`/api/state?track=${encodeURIComponent(route.track)}`);
+      const first = nextMission(S.missions) || S.missions[0];
+      current = route.n >= 1 && route.n <= S.missions.length ? route.n : first.n;
+      $("#course-side").hidden = false;
+      renderSide();
+      renderMission();
+    } else {
+      $("#course-side").hidden = true;
+      O = await getOverview();
+      $("#view").innerHTML = { dashboard: dashboardPage, courses: coursesPage, achievements: achievementsPage }[route.page]();
+    }
+  } catch (e) {
+    $("#view").innerHTML = `<h1 class="page-title">Something went wrong</h1><p class="lede">${esc(e.message)}. Is <code>python app.py</code> still running?</p>`;
+  }
+  if (!keepScroll) $("#main").scrollTop = 0;
+}
+const go = hash => location.hash === hash ? render() : (location.hash = hash);
+
+/* ---------- dashboard ---------- */
+function statTiles(ov) {
+  const ach = achievements(ov);
+  return `<div class="stats">
+    <div class="stat"><div class="v gold">${ov.courses.reduce((s, c) => s + c.xp, 0)}</div><div class="l">Total XP</div></div>
+    <div class="stat"><div class="v">${doneCount(ov.courses.flatMap(c => c.missions))}</div><div class="l">Missions completed</div></div>
+    <div class="stat"><div class="v">${streaks(activeDays(ov)).current} 🔥</div><div class="l">Day streak</div></div>
+    <div class="stat"><div class="v">${ach.filter(a => a.got).length}<span style="font-size:16px;color:var(--faint)"> / ${ach.length}</span></div><div class="l">Achievements</div></div>
+  </div>`;
+}
+
+function dashboardPage() {
+  const ach = achievements(O), unlocked = ach.filter(a => a.got);
+  const active = O.courses.filter(c => c.missions.some(m => m.status !== "new"));
+  const lastTrack = O.history.at(-1)?.track;
+  const course = active.find(c => c.track === lastTrack) || active[0];
+  const titles = Object.fromEntries(O.courses.flatMap(c => c.missions.map(m => [`${c.track}/${m.id}`, { ...m, course: c }])));
+
+  const cont = course ? (() => {
+    const next = nextMission(course.missions);
+    return `<div class="card continue">
+      <div class="top"><div class="icon-tile">${logo(course, 32)}</div>
+        <div><h3>${esc(course.name)}</h3><div class="sub">${esc(course.rank)} · ${doneCount(course.missions)} of ${course.missions.length} missions · ${pct(doneCount(course.missions), course.missions.length)}%</div></div></div>
+      <a class="btn primary" href="#/${course.track}${next ? "/" + next.n : ""}">${next ? "Continue →" : "Review course"}</a>
+      ${next ? `<div class="next-up"><span class="lbl">Up next</span><span class="kind k-${next.kind}">${next.kind}</span>
+        <span class="tt">${esc(next.title)}</span><span class="when" style="color:var(--faint);font-size:13px">${esc(next.chapter)}</span></div>` : ""}
+      <div class="chapters-mini">${chapters(course.missions).map(ch => `<div>
+        <div class="n">${esc(ch.name)}<span>${doneCount(ch.missions)}/${ch.missions.length}</span></div>
+        <div class="bar"><div style="width:${pct(doneCount(ch.missions), ch.missions.length)}%"></div></div></div>`).join("")}</div>
+    </div>`;
+  })() : `<a class="card continue" href="#/courses">
+      <div class="top"><div class="icon-tile">🚀</div><div><h3>Start your first course</h3><div class="sub">Pick a language and do mission 1. It takes about 15 minutes.</div></div></div>
+      <span class="btn primary">Browse courses →</span></a>`;
+
+  const recent = O.history.slice(-6).reverse().map(h => {
+    const m = titles[`${h.track}/${h.id}`];
+    return m ? `<li><span class="ck">✓</span><div class="what"><div>${esc(m.title)}</div>
+      <div class="when">${esc(m.course.name)} · ${whenLabel(h.date)}</div></div><span class="plus">+${m.xp}</span></li>` : "";
+  }).join("");
+  const nextBadge = ach.find(a => !a.got);
+
+  return `
+    <div class="eyebrow">Dashboard</div>
+    <h1 class="page-title">${O.history.length ? "Welcome back" : "Welcome"}</h1>
+    <p class="lede">${course ? "Pick up where you left off. One mission a day adds up fast." : "Learn to code by building real things, one mission at a time."}</p>
+    ${statTiles(O)}
+    <div class="section-title">Continue learning</div>
+    ${cont}
+    <div class="section-title">Activity</div>
+    ${heatmap(O)}
+    ${active.length > 1 ? `<div class="section-title">Your courses</div><div class="course-grid">${active.map(courseCard).join("")}</div>` : ""}
+    <div class="two">
+      <div><div class="section-title">Recent activity</div>
+        <div class="card">${recent ? `<ul class="activity">${recent}</ul>` : `<div class="empty">Finished missions show up here.</div>`}</div></div>
+      <div><div class="section-title">Achievements <a href="#/achievements">See all →</a></div>
+        <div class="mini-badges">
+          ${unlocked.slice(-3).reverse().map(badge).join("")}
+          ${nextBadge ? badge(nextBadge) : ""}
+        </div></div>
+    </div>`;
+}
+
+/* ---------- activity heatmap (GitHub-style, last 6 months) ---------- */
+function heatmap(ov, weeks = 26) {
+  const finished = {};
+  ov.history.forEach(h => finished[h.date] = (finished[h.date] || 0) + 1);
+  const today = new Date();
+  today.setHours(12, 0, 0, 0);
+  const start = new Date(today);
+  start.setDate(today.getDate() - today.getDay() - (weeks - 1) * 7);  // a Sunday, like GitHub
+  const cells = [], months = Array(weeks).fill("");
+  let total = 0, lastMonth = -1;
+  for (let w = 0; w < weeks; w++) {
+    for (let d = 0; d < 7; d++) {
+      const day = new Date(start);
+      day.setDate(start.getDate() + w * 7 + d);
+      if (d === 0 && day.getMonth() !== lastMonth) {
+        months[w] = day.toLocaleDateString(undefined, { month: "short" });
+        lastMonth = day.getMonth();
+      }
+      if (day > today) { cells.push(`<div class="hm-cell future"></div>`); continue; }
+      const iso = isoOf(day), checks = ov.checks[iso] || 0, done = finished[iso] || 0;
+      const n = Math.max(checks, done);  // a pass is also a check, so don't double count
+      total += n;
+      const level = n === 0 ? 0 : n <= 2 ? 1 : n <= 5 ? 2 : n <= 9 ? 3 : 4;
+      const date = day.toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" });
+      const tip = n ? `${checks} check${checks === 1 ? "" : "s"}${done ? `, ${done} mission${done === 1 ? "" : "s"} finished` : ""} on ${date}` : `Nothing on ${date}`;
+      cells.push(`<div class="hm-cell l${level} ${iso === todayIso() ? "today" : ""}" title="${tip}"></div>`);
+    }
+  }
+  if (months[1] || months[2]) months[0] = "";  // the first label would collide with the next one
+  const { current, best } = streaks(activeDays(ov));
+  return `<div class="card">
+    <div class="hm-top"><span class="total"><b>${total}</b> contributions in the last 6 months</span>
+      <span class="streak">🔥 Current streak <b>${current} day${current === 1 ? "" : "s"}</b> · Longest <b>${best} day${best === 1 ? "" : "s"}</b></span></div>
+    <div class="hm" style="--weeks:${weeks}">
+      <div class="hm-months">${months.map(m => `<span>${m}</span>`).join("")}</div>
+      <div class="hm-body">
+        <div class="hm-days"><span></span><span>Mon</span><span></span><span>Wed</span><span></span><span>Fri</span><span></span></div>
+        <div class="hm-grid">${cells.join("")}</div>
+      </div>
+      <div class="hm-foot"><span>Every check and every finished mission counts.</span>
+        <span class="legend">Less ${[0, 1, 2, 3, 4].map(l => `<span class="hm-cell l${l}"></span>`).join("")} More</span></div>
+    </div>
+  </div>`;
+}
+
+/* ---------- courses ---------- */
+function courseCard(c) {
+  const done = doneCount(c.missions), total = c.missions.length;
+  const totalXp = c.missions.reduce((s, m) => s + m.xp, 0);
+  const next = nextMission(c.missions);
+  const label = done === total ? "Review" : c.missions.some(m => m.status !== "new") ? "Continue →" : "Start course →";
+  return `<a class="card course-card" href="#/${c.track}${next ? "/" + next.n : ""}">
+    <div class="top"><div class="icon-tile">${logo(c, 32)}</div>
+      <div><h3>${esc(c.name)}</h3><div class="meta">${total} missions · ${chapters(c.missions).length} chapters · ${totalXp.toLocaleString()} XP</div></div></div>
+    <p class="desc">${esc(c.description)}</p>
+    <div class="chips">${chapters(c.missions).map(ch => `<span class="chip">${esc(ch.name)} <b>${doneCount(ch.missions)}/${ch.missions.length}</b></span>`).join("")}</div>
+    <div class="foot"><div class="bar"><div style="width:${pct(done, total)}%"></div></div><span class="pct">${pct(done, total)}%</span>
+      <span class="btn primary">${label}</span></div>
+  </a>`;
+}
+
+function coursesPage() {
+  return `
+    <div class="eyebrow">Courses</div>
+    <h1 class="page-title">Courses</h1>
+    <p class="lede">Pick a language. Every course takes you from zero to building real things, with missions checked by real tests.</p>
+    <div class="course-grid">
+      ${O.courses.map(courseCard).join("")}
+      <div class="card ghost-card"><div><div class="plus">＋</div><div>More languages can be added later.</div>
+        <div style="font-size:13px;margin-top:6px">A new folder in <code>tracks/</code> shows up here as a course.</div></div></div>
+    </div>`;
+}
+
+/* ---------- achievements ---------- */
+function badge(a) {
+  return `<div class="badge ${a.got ? "got" : "locked"}">
+    <div class="em">${a.icon}</div>
+    <div style="min-width:0"><div class="bt">${esc(a.title)}</div><div class="bd">${esc(a.desc)}</div>
+    ${a.goal > 1 && !a.got ? `<div class="bp"><div class="bar"><div style="width:${pct(a.have, a.goal)}%"></div></div>${a.have}/${a.goal}</div>`
+      : `<div class="bp">${a.got ? "✓ Unlocked" : "🔒 Locked"}</div>`}</div>
+  </div>`;
+}
+
+function achievementsPage() {
+  const ach = achievements(O), got = ach.filter(a => a.got).length;
+  return `
+    <div class="eyebrow">Achievements</div>
+    <h1 class="page-title">Achievements</h1>
+    <p class="lede">${got} of ${ach.length} unlocked. Keep going: every chapter you clear adds a badge.</p>
+    <div class="badges">${[...ach.filter(a => a.got), ...ach.filter(a => !a.got)].map(badge).join("")}</div>`;
+}
+
+/* ---------- account ---------- */
+const avatar = (name, cls = "") => `<span class="avatar ${cls}">${esc(name[0].toUpperCase())}</span>`;
+
+function privacyNote() {
+  return `<div class="card note-card"><h3>🔒 What gets shared</h3><ul>
+    <li>Your <b>code and progress live on this computer</b>. Signing in syncs a copy so friends can see it.</li>
+    <li>Only <b>friends you accept</b> can see your progress. Strangers see nothing.</li>
+    <li>A friend can read your code for a mission <b>only after they've finished it too</b>. No spoilers.</li>
+    <li>Your password goes straight to the login server and is never saved on this computer.</li></ul></div>`;
+}
+
+async function accountPage() {
+  if (ME.signed_in) {
+    const s = ME.sync;
+    const synced = s.error ? `⚠ Last sync failed: ${esc(s.error)}`
+      : s.synced_at ? `✓ Progress synced at ${new Date(s.synced_at * 1000).toLocaleTimeString()}` : "Your progress syncs after every check.";
+    return `
+      <div class="eyebrow">Account</div>
+      <h1 class="page-title">Your account</h1>
+      <div class="card account-card">
+        <div class="who">${avatar(ME.username, "big")}<div><h3>${esc(ME.username)}</h3><div class="sub">${esc(ME.email)}</div></div></div>
+        <p class="sub">${synced}</p>
+        <div class="row-btns"><a class="btn primary" href="#/friends">Friends →</a><button class="btn" data-act="signout">Sign out</button></div>
+      </div>
+      ${privacyNote()}`;
+  }
+  return `
+    <div class="eyebrow">Account</div>
+    <h1 class="page-title">Sign in</h1>
+    <p class="lede">An account lets you add friends and see each other's progress. Everything else works without one.</p>
+    <div class="two">
+      <form class="card form" data-form="signin"><h3>Sign in</h3>
+        <label>Email<input name="email" type="email" required autocomplete="email"></label>
+        <label>Password<input name="password" type="password" required autocomplete="current-password"></label>
+        <button class="btn primary">Sign in</button></form>
+      <form class="card form" data-form="signup"><h3>Create account</h3>
+        <label>Username <small>(friends find you by this)</small><input name="username" required pattern="[A-Za-z0-9_]{3,20}" title="3-20 letters, numbers or _" autocomplete="username"></label>
+        <label>Email<input name="email" type="email" required autocomplete="email"></label>
+        <label>Password <small>(8+ characters)</small><input name="password" type="password" required minlength="8" autocomplete="new-password"></label>
+        <button class="btn primary">Create account</button></form>
+    </div>
+    ${privacyNote()}`;
+}
+
+/* ---------- friends ---------- */
+async function friendsPage() {
+  if (!ME.signed_in) {
+    return `<div class="eyebrow">Friends</div><h1 class="page-title">Friends</h1>
+      <p class="lede">Sign in to add friends and compare progress.</p>
+      <a class="btn primary" href="#/account">Sign in or create an account →</a>`;
+  }
+  const [f, ov] = await Promise.all([api("/api/friends"), getOverview()]);
+  const board = [...f.friends, { username: ME.username, xp: ov.courses.reduce((s, c) => s + c.xp, 0), you: true }]
+    .sort((a, b) => b.xp - a.xp);
+  const person = (n, extra) => `<div class="person">${avatar(n)}<b>${esc(n)}</b><span class="spacer"></span>${extra}</div>`;
+  return `
+    <div class="eyebrow">Friends</div>
+    <h1 class="page-title">Friends</h1>
+    <p class="lede">Add friends by username. Once they accept, you can see each other's progress.</p>
+    <form class="card add-friend" data-form="add">
+      <input name="username" placeholder="Friend's username" required pattern="[A-Za-z0-9_]{3,20}" autocomplete="off">
+      <button class="btn primary">Send request</button></form>
+    ${f.incoming.length ? `<div class="section-title">Requests for you</div><div class="card">${f.incoming.map(n => person(n,
+      `<button class="btn primary" data-act="accept" data-name="${esc(n)}">Accept</button>
+       <button class="btn" data-act="remove" data-name="${esc(n)}">Decline</button>`)).join("")}</div>` : ""}
+    <div class="section-title">Leaderboard</div>
+    <div class="card">${board.map((p, i) => `
+      <div class="person ${p.you ? "you" : ""}"><span class="place">${["🥇", "🥈", "🥉"][i] || "#" + (i + 1)}</span>${avatar(p.username)}
+        <b>${esc(p.username)}${p.you ? " (you)" : ""}</b><span class="spacer"></span><span class="xpv">${p.xp} XP</span>
+        ${p.you ? `<a class="btn" href="#/dashboard">Dashboard</a>` : `<a class="btn" href="#/u/${encodeURIComponent(p.username)}">View profile →</a>`}</div>`).join("")}
+      ${f.friends.length ? "" : `<div class="empty">No friends yet. Send a request above!</div>`}</div>
+    ${f.outgoing.length ? `<div class="section-title">Waiting for them to accept</div><div class="card">${f.outgoing.map(n => person(n,
+      `<button class="btn" data-act="remove" data-name="${esc(n)}">Cancel</button>`)).join("")}</div>` : ""}`;
+}
+
+async function userPage() {
+  const ov = await api(`/api/user?name=${encodeURIComponent(route.name)}`);
+  const name = esc(ov.username);
+  const earned = achievements(ov).filter(a => a.got);
+  const row = (c, m) => `<div class="fm ${m.status}">
+      <span class="dot">${m.status === "done" ? "✓" : m.n}</span><span class="fm-t">${esc(m.title)}</span><span class="kind k-${m.kind}">${m.kind}</span>
+      ${m.code ? `<button class="btn small" data-act="code" data-track="${c.track}" data-mission="${esc(m.id)}" data-title="${esc(m.title)}">View code</button>`
+        : m.status === "done" ? `<span class="locked-code" title="Their code unlocks once you finish this mission too">🔒 finish it to see their code</span>` : ""}
+    </div>`;
+  return `
+    <div class="crumbs"><a href="#/friends">Friends</a> › ${name}</div>
+    <div class="who">${avatar(ov.username, "big")}
+      <div><h1 class="page-title" style="margin:0">${name}</h1>
+      <div class="sub">${ov.courses.map(c => `${esc(c.name)} · ${esc(c.rank)}`).join("  ·  ")}</div></div></div>
+    <div style="margin-top:24px">${statTiles(ov)}</div>
+    <div class="section-title">Activity</div>
+    ${heatmap(ov)}
+    ${ov.courses.map(c => `
+      <div class="section-title"><span>${esc(c.name)}: ${doneCount(c.missions)} of ${c.missions.length} missions</span></div>
+      <div class="card">${chapters(c.missions).map(ch => `
+        <div class="ch-label">${esc(ch.name)} <span>${doneCount(ch.missions)}/${ch.missions.length}</span></div>
+        ${ch.missions.map(m => row(c, m)).join("")}`).join("")}</div>`).join("")}
+    <div class="section-title">Achievements</div>
+    ${earned.length ? `<div class="badges">${earned.map(badge).join("")}</div>` : `<div class="card empty">No achievements yet.</div>`}
+    <div style="margin-top:34px"><button class="btn" data-act="remove" data-name="${name}" data-confirm="1">Remove friend</button></div>`;
+}
+
+async function showCode(track, mission, title) {
+  const r = await api(`/api/user/code?name=${encodeURIComponent(route.name)}&track=${encodeURIComponent(track)}&mission=${encodeURIComponent(mission)}`);
+  const col = (who, c) => `<div class="cm-col"><div class="cm-label">${who} <code>${esc(c.filename)}</code></div><pre>${esc(c.code)}</pre></div>`;
+  $("#cm-kicker").textContent = `${route.name}'s solution`;
+  $("#cm-title").textContent = title;
+  $("#cm-cols").innerHTML = col(esc(route.name), r.theirs) + (r.mine ? col("You", r.mine) : "");
+  $("#code-view").classList.remove("hidden");
+}
+
+async function doAct(el) {
+  const { act, name } = el.dataset;
+  try {
+    if (act === "signout") {
+      await api("/api/signout", {});
+      toast("Signed out");
+      return render();
+    }
+    if (act === "code") return await showCode(el.dataset.track, el.dataset.mission, el.dataset.title);
+    if (act === "remove" && el.dataset.confirm && !confirm(`Remove ${name} from your friends?`)) return;
+    await api(`/api/friends/${act}`, { username: name });
+    toast(act === "accept" ? `You and ${name} are now friends!` : "Done");
+    el.dataset.confirm ? go("#/friends") : render(true);
+  } catch (err) {
+    toast(err.message);
+  }
+}
+
+document.addEventListener("submit", async e => {
+  const form = e.target.closest("[data-form]");
+  if (!form) return;
+  e.preventDefault();
+  const data = Object.fromEntries(new FormData(form));
+  const btn = form.querySelector("button");
+  btn.disabled = true;
+  try {
+    if (form.dataset.form === "add") {
+      const r = await api("/api/friends/add", data);
+      toast(r.result === "accepted" ? `You and ${data.username} are now friends!` : `Request sent to ${data.username}`);
+      return render(true);
+    }
+    await api(`/api/${form.dataset.form}`, data);
+    toast(form.dataset.form === "signup" ? "Account created. Welcome!" : "Signed in");
+    go("#/friends");
+  } catch (err) {
+    toast(err.message);
+    btn.disabled = false;
+  }
+});
+
+/* ---------- course: sidebar ---------- */
+function renderSide(xpShown = S.xp) {
+  $("#course-title").innerHTML = `${logo(S, 20)}${esc(S.name)}`;
+  $("#rank").textContent = S.rank;
+  $("#xp").textContent = xpShown;
+  if (S.next) {
+    $("#next").textContent = `${S.next[0] - S.xp} XP to ${S.next[1]}`;
+    $("#bar").style.width = pct(S.xp - S.rank_xp, S.next[0] - S.rank_xp) + "%";
+  } else {
+    $("#next").textContent = "max rank!";
+    $("#bar").style.width = "100%";
+  }
+  const cur = S.missions[current - 1];
+  $("#list").innerHTML = chapters(S.missions).map(ch => {
+    const done = doneCount(ch.missions);
+    const isClosed = closed.has(ch.name) && ch.name !== cur.chapter;
+    return `<section class="chapter ${isClosed ? "closed" : ""}">
+      <button class="ch-head" data-chapter="${esc(ch.name)}"><span class="caret">▼</span>
+        <span class="ch-name">${esc(ch.name)}</span><span class="ch-count">${done}/${ch.missions.length}</span></button>
+      <div class="ch-bar"><div style="width:${pct(done, ch.missions.length)}%"></div></div>
+      <div class="items">${ch.missions.map(m => `
+        <button class="item ${m.status} ${m.n === current ? "active" : ""}" data-n="${m.n}">
+          <span class="dot">${m.status === "done" ? "✓" : m.n}</span>
+          <span class="t"><div class="name">${esc(m.title)}</div>
+          <div class="meta"><span class="kind k-${m.kind}">${m.kind}</span><span>${m.xp} xp</span></div></span>
+        </button>`).join("")}</div>
+    </section>`;
+  }).join("");
+}
+
+/* ---------- course: mission view ---------- */
+function renderBrief(md) {
+  md = md.replace(/^# .*\n(\*\*.*\n)?/, "");  // the header card already shows the title line
+  return window.marked ? marked.parse(md) : `<pre>${esc(md)}</pre>`;
+}
+
+function renderMission() {
+  const m = S.missions[current - 1];
+  const inChapter = S.missions.filter(x => x.chapter === m.chapter).length;
+  const started = m.status !== "new";
+  $("#view").innerHTML = `
+    <div class="crumbs"><a href="#/courses">Courses</a> › <a href="#/${S.track}">${logo(S, 14)} ${esc(S.name)}</a> › ${esc(m.chapter)}</div>
+    <div class="head">
+      <div class="num">${esc(m.chapter)} · Mission ${m.chapter_n} / ${inChapter}${m.status === "done" ? ` <span class="done-tag">· ✓ complete</span>` : ""}</div>
+      <h1>${esc(m.title)}</h1>
+      <div class="row"><span class="kind k-${m.kind}">${m.kind}</span><span class="xp-pill">${m.xp} XP</span>
+        <span>your file <code>${esc(m.file)}</code></span></div>
+    </div>
+    <div class="actions">
+      ${started
+        ? `<button class="btn check" id="check">▶ Check my code <kbd>Ctrl+Enter</kbd></button>
+           <button class="btn" id="open">Open in VS Code</button>
+           <span class="hint-text">Save first (Ctrl+S)</span>`
+        : `<button class="btn primary" id="start">Start mission</button>
+           <span class="hint-text">Creates your file and opens it in VS Code</span>`}
+      <span class="spacer"></span>
+      <button class="icon-btn" id="sound" title="Sound on/off">${soundOn ? "🔊" : "🔇"}</button>
+    </div>
+    <div id="results"></div>
+    <article class="brief">${renderBrief(m.brief)}</article>`;
+  document.querySelectorAll(".brief a").forEach(a => a.target = "_blank");
+  if (lastCheck && lastCheck.n === current) renderResults(lastCheck.data, false);
+}
+
+const select = n => go(`#/${S.track}/${n}`);
+
+/* ---------- results ---------- */
+function failBody(t) {
+  const text = t.message + (t.detail ? "\n" + t.detail : "");
+  const got = text.match(/^\s*got:\s+(.*)$/m), want = text.match(/^\s*expected:\s+(.*)$/m);
+  if (got && want) {
+    const quoted = s => /^['"]/.test(s);
+    const note = quoted(got[1]) && !quoted(want[1])
+      ? `<p class="note">💬 Your answer has quotes around it, so it's <b>text</b> (a string). The answer should be a plain value. Is there an f-string or <code>str()</code> where you meant to return the value itself?</p>`
+      : "";
+    return `<div>${esc(t.message)}</div>
+      <div class="ge"><div>your code gave</div><div class="got">${esc(got[1])}</div>
+      <div>it should be</div><div class="want">${esc(want[1])}</div></div>${note}`;
+  }
+  return `<div>${esc(t.message)}</div>${t.detail ? `<pre class="detail">${esc(t.detail)}</pre>` : ""}`;
+}
+
+function crashBody(t) {
+  const e = t.error || {};
+  const explain = S.errors[e.type];
+  const file = S.missions[current - 1].file.split("/").pop();
+  return `<div class="err">
+      <div><span class="etype">${esc(e.type || "Error")}</span> <span class="emsg">${esc(e.message)}</span></div>
+      ${explain ? `<p class="explain">${esc(explain)}</p>` : ""}
+      ${e.line ? `<div class="where">It happened in <b>${esc(file)}</b>, line ${e.line}:</div>
+        <pre class="line">${esc(e.code)}</pre>
+        <button class="linkbtn" data-line="${e.line}">Jump to line ${e.line} in VS Code →</button>` : ""}
+    </div>
+    <details class="raw" style="padding:6px 0 0;border:0"><summary>Full error (traceback)</summary><pre>${esc(t.detail)}</pre></details>`;
+}
+
+function renderResults(r, animate = true) {
+  const tests = r.results, passing = tests.filter(t => t.status === "PASS").length;
+  const icon = { PASS: "✓", FAIL: "✗", CRASH: "!", TODO: "…" };
+  const label = { PASS: "", FAIL: "wrong answer", CRASH: "crashed", TODO: "not written yet" };
+  const headline = r.passed ? "All tests passing!" : tests.length ? `${passing} of ${tests.length} tests passing` : "No test output";
+  $("#results").innerHTML = `
+    <section class="results ${r.passed ? "pass" : "fail"}">
+      <div class="r-head"><span class="big">${r.passed ? "🎉 " : ""}${headline}</span>
+        <div class="pips">${tests.map(t => `<span class="pip ${animate ? "" : t.status}"></span>`).join("")}</div></div>
+      ${tests.map((t, i) => `
+        <div class="test ${t.status}" style="animation-delay:${animate ? i * 120 : 0}ms">
+          <span class="ic">${icon[t.status]}</span>
+          <span class="tn">${esc(human(t.name))}<small>${label[t.status]}</small></span>
+          ${t.status === "FAIL" ? `<div class="body">${failBody(t)}</div>` : ""}
+          ${t.status === "CRASH" ? `<div class="body">${crashBody(t)}</div>` : ""}
+        </div>`).join("")}
+      ${!r.passed ? `<div class="r-head tip"><span>Tip: fix the <b>first</b> problem, save, and check again. One thing at a time.</span></div>` : ""}
+      <details class="raw"><summary>Raw test output</summary><pre>${esc(r.output)}</pre></details>
+    </section>`;
+  if (animate) {
+    tests.forEach((t, i) => setTimeout(() => {
+      document.querySelectorAll(".pip")[i]?.classList.add(t.status);
+      if (t.status === "PASS") blip(660 + Math.min(i, 12) * 60, 0.05);
+    }, i * 120));
+  }
+}
+
+/* ---------- actions ---------- */
+async function start() {
+  const r = await api("/api/start", { track: S.track, mission: current });
+  S = r.state;
+  renderSide(); renderMission();
+  toast(r.opened ? "Opened in VS Code. Read the brief, then start coding!" : "File created. (VS Code's `code` command wasn't found, so open it yourself.)");
+}
+
+async function openEditor(line) {
+  const r = await api("/api/open", { track: S.track, mission: current, line });
+  toast(r.opened ? (line ? `Jumped to line ${line}` : "Opened in VS Code") : "Couldn't find VS Code's `code` command.");
+}
+
+async function check() {
+  const btn = $("#check");
+  if (!btn || busy) return;
+  busy = true;
+  btn.disabled = true; btn.innerHTML = `<span class="spin"></span> Running tests…`;
+  try {
+    const hadBadges = new Set(achievements(await getOverview()).filter(a => a.got).map(a => a.title));
+    const r = await api("/api/check", { track: S.track, mission: current });
+    const before = r.before;
+    S = r.state;
+    lastCheck = { n: current, data: r };
+    renderSide(before.xp);
+    renderMission();
+    renderResults(r);
+    const delay = r.results.length * 120 + 250;
+    if (r.first_time) {
+      const fresh = achievements(await getOverview()).filter(a => a.got && !hadBadges.has(a.title));
+      setTimeout(() => celebrate(before, fresh), delay);
+    }
+    else if (r.passed) setTimeout(() => { chime(true); toast("Still passing ✓"); }, delay);
+    else setTimeout(() => $("#check")?.classList.add("shake"), delay);
+  } catch (e) {
+    toast("Error: " + e.message);
+    renderMission();
+  } finally {
+    busy = false;
+  }
+}
+
+function celebrate(before, badges) {
+  const m = S.missions[current - 1];
+  chime();
+  confetti();
+  $("#win-title").textContent = m.title;
+  $("#win-rank").hidden = before.rank === S.rank;
+  $("#win-rank").textContent = `⬆ RANK UP: ${S.rank}`;
+  $("#win-ach").innerHTML = badges.map(a => `<div>${a.icon} Achievement unlocked: ${esc(a.title)}</div>`).join("");
+  const next = S.missions.find(x => x.n > current && x.status !== "done") || nextMission(S.missions);
+  $("#win-next").textContent = next ? `Next: ${next.title} →` : "You finished the course!";
+  $("#win-next").onclick = () => { $("#win").classList.add("hidden"); go(next ? `#/${S.track}/${next.n}` : "#/achievements"); };
+  $("#win").classList.remove("hidden");
+  countUp($("#win-xp"), 0, m.xp, 900);
+  countUp($("#xp"), before.xp, S.xp, 1400);
+  $("#player").classList.remove("bump"); void $("#player").offsetWidth; $("#player").classList.add("bump");
+}
+
+function countUp(el, from, to, ms) {
+  const t0 = performance.now();
+  const step = now => {
+    const p = Math.min(1, (now - t0) / ms);
+    el.textContent = Math.round(from + (to - from) * (1 - Math.pow(1 - p, 3)));
+    if (p < 1) requestAnimationFrame(step);
+  };
+  requestAnimationFrame(step);
+}
+
+function toast(msg) {
+  const t = $("#toast");
+  t.textContent = msg;
+  t.classList.add("show");
+  clearTimeout(toast.timer);
+  toast.timer = setTimeout(() => t.classList.remove("show"), 2800);
+}
+
+/* ---------- sound ---------- */
+let audio;
+function tone(freq, at, len, vol = 0.18, type = "triangle") {
+  if (!soundOn) return;
+  audio = audio || new AudioContext();
+  const o = audio.createOscillator(), g = audio.createGain(), t = audio.currentTime + at;
+  o.type = type; o.frequency.value = freq;
+  g.gain.setValueAtTime(0.0001, t);
+  g.gain.exponentialRampToValueAtTime(vol, t + 0.015);
+  g.gain.exponentialRampToValueAtTime(0.0001, t + len);
+  o.connect(g).connect(audio.destination);
+  o.start(t); o.stop(t + len + 0.05);
+}
+const blip = (f, vol) => tone(f, 0, 0.12, vol, "sine");
+function chime(small) {
+  const notes = small ? [784, 1047] : [523, 659, 784, 1047, 1319];
+  notes.forEach((f, i) => tone(f, i * 0.09, small ? 0.3 : 0.6));
+}
+
+/* ---------- confetti ---------- */
+function confetti() {
+  const c = $("#fx"), ctx = c.getContext("2d");
+  c.width = innerWidth; c.height = innerHeight;
+  const colors = ["#e11d48", "#ff4d6d", "#ff8fab", "#f7b538", "#ffd479", "#ff8a4c", "#ffffff"];
+  const bits = Array.from({ length: 200 }, (_, i) => {
+    const left = i % 2 === 0;
+    return { x: left ? 0 : c.width, y: c.height * 0.75, vx: (left ? 1 : -1) * (6 + Math.random() * 10), vy: -(10 + Math.random() * 14),
+             r: Math.random() * 6, vr: Math.random() * 0.3 - 0.15, w: 6 + Math.random() * 6, h: 8 + Math.random() * 10,
+             color: colors[i % colors.length] };
+  });
+  const t0 = performance.now();
+  (function frame(now) {
+    ctx.clearRect(0, 0, c.width, c.height);
+    for (const b of bits) {
+      b.vy += 0.35; b.vx *= 0.985; b.x += b.vx; b.y += b.vy; b.r += b.vr;
+      ctx.save(); ctx.translate(b.x, b.y); ctx.rotate(b.r);
+      ctx.fillStyle = b.color; ctx.fillRect(-b.w / 2, -b.h / 2, b.w, b.h * Math.abs(Math.cos(b.r * 3)));
+      ctx.restore();
+    }
+    if (now - t0 < 4000) requestAnimationFrame(frame); else ctx.clearRect(0, 0, c.width, c.height);
+  })(t0);
+}
+
+/* ---------- events ---------- */
+document.addEventListener("click", e => {
+  const act = e.target.closest("[data-act]");
+  if (act) return doAct(act);
+  if (e.target.id === "cm-close" || e.target.id === "code-view") return $("#code-view").classList.add("hidden");
+  const head = e.target.closest(".ch-head");
+  if (head) {
+    const name = head.dataset.chapter;
+    closed.has(name) ? closed.delete(name) : closed.add(name);
+    store.set("closedChapters", JSON.stringify([...closed]));
+    head.parentElement.classList.toggle("closed");
+    return;
+  }
+  const item = e.target.closest(".item");
+  if (item) return select(+item.dataset.n);
+  const id = e.target.closest("button")?.id;
+  if (id === "start") start();
+  if (id === "check") check();
+  if (id === "open") openEditor();
+  if (id === "win-stay") $("#win").classList.add("hidden");
+  if (id === "sound") {
+    soundOn = !soundOn;
+    store.set("sound", soundOn ? "on" : "off");
+    e.target.textContent = soundOn ? "🔊" : "🔇";
+  }
+  const jump = e.target.closest("[data-line]");
+  if (jump) openEditor(+jump.dataset.line);
+});
+document.addEventListener("keydown", e => {
+  if (e.key === "Enter" && (e.ctrlKey || e.metaKey) && route.page === "course") { e.preventDefault(); check(); }
+  if (e.key === "Escape") { $("#win").classList.add("hidden"); $("#code-view").classList.add("hidden"); }
+});
+window.addEventListener("hashchange", () => render());
+// coming back from VS Code: refresh in case files changed
+window.addEventListener("focus", async () => {
+  if (busy) return;
+  if (route.page === "course" && S) {
+    S = await api(`/api/state?track=${encodeURIComponent(S.track)}`);
+    renderSide();
+  } else {
+    render(true);
+  }
+});
+
+render();
+</script>
+</body>
+</html>

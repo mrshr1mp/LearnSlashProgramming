@@ -1,0 +1,10 @@
+# Your own code, progress and login session: never commit these
+workspace/
+
+# Python leftovers
+__pycache__/
+*.pyc
+
+# Secrets, just in case one ever gets added
+.env
+*.key

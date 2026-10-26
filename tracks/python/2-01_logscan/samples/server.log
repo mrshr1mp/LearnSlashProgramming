@@ -1,0 +1,24 @@
+2026-10-01 02:00:00 [INFO] Server started
+2026-10-01 02:00:01 [INFO] Loaded 12 plugins
+2026-10-01 02:03:17 [INFO] Request served
+2026-10-01 02:04:40 [WARN] Slow query (2.1s)
+2026-10-01 02:05:02 [INFO] Request served
+2026-10-01 02:09:55 [ERROR] User not found
+
+2026-10-01 02:10:12 [INFO] Request served
+2026-10-01 02:15:30 [WARN] Disk 91% full
+2026-10-01 02:16:01 [ERROR] Database timeout
+2026-10-01 02:16:04 [ERROR] Database timeout
+2026-10-01 02:16:09 [ERROR] Database timeout
+2026-10-01 02:16:10 [WARN] Retrying database connection
+2026-10-01 02:16:20 [ERROR] Database timeout
+2026-10-01 02:17:00 [INFO] Request served
+2026-10-01 02:20:45 [ERROR] Disk full
+2026-10-01 02:20:46 [ERROR] Could not write session file
+
+2026-10-01 02:21:00 [WARN] Disk 100% full
+2026-10-01 02:21:02 [ERROR] Disk full
+2026-10-01 02:21:03 [ERROR] Database timeout
+2026-10-01 02:22:30 [ERROR] User not found
+2026-10-01 02:23:00 [ERROR] Disk full
+2026-10-01 02:23:59 [INFO] Shutting down

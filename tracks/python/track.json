@@ -1,0 +1,26 @@
+{
+  "name": "Python",
+  "icon": "🐍",
+  "logo": "https://cdn.jsdelivr.net/npm/devicon@2.16.0/icons/python/python-original.svg",
+  "description": "From your very first line of code to building your own programming language. Lessons, real tools, puzzles and bosses.",
+  "run": ["{python}", "{track}/harness.py", "{test}", "{solution}"],
+  "ranks": [[0, "Hello Worlder"], [100, "Bug Squasher"], [380, "Apprentice"], [700, "Script Slinger"],
+            [1100, "Toolsmith"], [1630, "Pythonista"], [2500, "Code Wizard"], [3480, "Python Master"]],
+  "errors": {
+    "IndexError": "You asked for a position in a list (or string) that doesn't exist, like item [1] of a list with only 1 thing in it. Check how long it really is: print it with repr().",
+    "KeyError": "You looked up a key in a dict that isn't there. Use `key in d` to check first, or d.get(key, default).",
+    "NameError": "Python doesn't know that name. Usually a typo, or a variable used before it was created, or an import you forgot.",
+    "TypeError": "You used a value the wrong way: adding a number to a string, calling something that isn't a function, or passing the wrong number of arguments.",
+    "AttributeError": "That object doesn't have that method or attribute. Check the spelling, and check what type it really is with type(x).",
+    "ValueError": "Right type, wrong value, like int(\"hello\"). The value can't be used the way you tried.",
+    "SyntaxError": "Python couldn't even read the file. Look for a missing colon, bracket, or quote on that line or the line above it.",
+    "IndentationError": "The spaces at the start of a line don't line up. Everything inside the same block needs the same indentation.",
+    "UnboundLocalError": "You used a variable inside a function before giving it a value in that function.",
+    "RecursionError": "A function called itself too many times (Python stops at about 1000 levels deep). Either it never stops, or the problem needs a loop instead of recursion.",
+    "ZeroDivisionError": "You divided by zero. Check for that case before dividing.",
+    "FileNotFoundError": "That file path doesn't exist. Print the path you're opening and check it, especially relative paths.",
+    "ModuleNotFoundError": "Python can't find that module. Check the spelling of the import.",
+    "ImportError": "The import failed. Check the names you're importing actually exist in that module.",
+    "AssertionError": "An assert in your own code failed."
+  }
+}
