@@ -1197,7 +1197,9 @@ document.addEventListener("keydown", e => {
 window.addEventListener("hashchange", () => render());
 // coming back from VS Code: refresh in case files changed
 window.addEventListener("focus", async () => {
-  if (busy || !ME.signed_in) return;  // don't wipe a half-typed sign-in form
+  // Skip pages with forms: re-rendering would wipe half-typed text, and on the account page it would
+  // throw away the file box just as the picture picker closes (so the chosen picture got lost).
+  if (busy || !ME.signed_in || ["account", "friends"].includes(route.page)) return;
   if (route.page === "course" && S) {
     S = await api(`/api/state?track=${encodeURIComponent(S.track)}`);
     renderSide();
