@@ -1,6 +1,8 @@
 # Your own code, progress and login session: never commit these
 workspace/
 
+*.log
+
 # Python leftovers
 __pycache__/
 *.pyc

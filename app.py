@@ -20,7 +20,8 @@ import updates
 PORT = int(os.environ.get("LEARN_PORT", 8765))  # override only if 8765 is taken (or for testing)
 HOSTS = {f"127.0.0.1:{PORT}", f"localhost:{PORT}"}
 VERSION = updates.version()
-OPEN = {"/api/me", "/api/signin", "/api/signup", "/api/quit"}  # everything else needs you signed in
+OPEN = {"/api/me", "/api/signin", "/api/signup", "/api/quit", "/api/ping"}  # everything else needs you signed in
+LAST_SEEN = [time.time()]  # when the app window last talked to us
 UI = learn.ROOT / "ui.html"
 RESULT = re.compile(r"^  (PASS|FAIL|CRASH|TODO)\s+(\S+?)(?::\s?(.*))?$")
 FRAME = re.compile(r'File "(.+?)", line (\d+)')
@@ -147,7 +148,10 @@ class Handler(BaseHTTPRequestHandler):
         # header can't be sent by other websites without a CORS preflight, which we never approve.
         if self.headers.get("Host") not in HOSTS:
             return False
-        return not path.startswith("/api/") or self.headers.get("X-Kit") == "1"
+        if path.startswith("/api/") and self.headers.get("X-Kit") != "1":
+            return False
+        LAST_SEEN[0] = time.time()
+        return True
 
     def signed_out(self, path):
         """You need an account to use the app; only the sign-in endpoints work without one."""
@@ -174,6 +178,8 @@ class Handler(BaseHTTPRequestHandler):
                 return self.send(state(q["track"]))
             if url.path == "/api/me":
                 return self.send(me())
+            if url.path == "/api/ping":  # the open window checks in so we know it's still there
+                return self.send({})
             if url.path == "/api/friends":
                 return self.send(cloud.friends())
             if url.path.startswith("/api/user") and not cloud.USERNAME.match(q.get("name", "")):
@@ -324,7 +330,31 @@ def restart():
                      cwd=learn.ROOT, creationflags=flags)
 
 
+def quit_when_window_closed(server, timeout=180, every=15):
+    """There's no console window to close, so stop once the app window has been gone for a while.
+    (The window checks in every 30 seconds, even when minimized.)"""
+    def watch():
+        # count quiet checks rather than comparing clock times, so waking from sleep doesn't look like "gone for hours"
+        seen, quiet = LAST_SEEN[0], 0
+        while quiet * every < timeout:
+            time.sleep(every)
+            quiet = 0 if LAST_SEEN[0] != seen else quiet + 1
+            seen = LAST_SEEN[0]
+        server.shutdown()
+    threading.Thread(target=watch, daemon=True).start()
+
+
+def log_to_file():
+    """Without a console (pythonw), send messages and errors to workspace/app.log instead."""
+    if sys.stdout is None or sys.stderr is None:
+        learn.WORK.mkdir(parents=True, exist_ok=True)
+        log = open(learn.WORK / "app.log", "a", encoding="utf-8", buffering=1)
+        sys.stdout = sys.stderr = log
+        print(f"\n--- {time.strftime('%Y-%m-%d %H:%M:%S')} starting")
+
+
 def main():
+    log_to_file()
     if "--updated" not in sys.argv and updates.check():
         print("\n  Updating learn/programming...")
         ok, message = updates.apply()
@@ -342,6 +372,7 @@ def main():
     print(f"\n  learn/programming ({VERSION}) is running at {url}\n  Close this window to quit.\n")
     cloud.sync_in_background()  # catch up on anything finished while offline
     updates.check_in_background()
+    quit_when_window_closed(server)
     if "--no-window" not in sys.argv:  # after an in-app update, the old window just reloads
         open_window(url)
     try:

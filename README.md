@@ -4,7 +4,7 @@ Learn a language by building real tools, not by answering quizzes.
 
 **Double-click `Start Learning.bat`** (or run `python app.py`). The app opens in its own window:
 read the mission, hit **Start mission** (opens your file in VS Code), write code, save, then hit
-**Check my code** or press **Ctrl+Enter**. Keep the black console window open while you use it; closing it quits the app.
+**Check my code** or press **Ctrl+Enter**. No console window: the app closes itself a few minutes after you close its window. If something goes wrong, `workspace/app.log` has the details.
 
 Prefer the terminal? Same thing without the app:
 ```

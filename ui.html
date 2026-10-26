@@ -592,6 +592,9 @@ async function waitForNewVersion(old) {
   toast("The update is taking a while. Try closing the app and opening it again.");
 }
 
+// tell the app this window is still open (it quits a few minutes after the window closes)
+setInterval(() => api("/api/ping").catch(() => {}), 30 * 1000);
+
 // check every few minutes whether the server has found an update, so the banner shows up on its own
 setInterval(async () => {
   if (!ME.signed_in) return;
