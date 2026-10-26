@@ -4,6 +4,9 @@ import os
 import re
 import shutil
 import subprocess
+import threading
+import time
+import urllib.request
 import webbrowser
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
@@ -14,7 +17,7 @@ import learn
 
 PORT = 8765
 HOSTS = {f"127.0.0.1:{PORT}", f"localhost:{PORT}"}
-OPEN = {"/api/me", "/api/signin", "/api/signup"}  # everything else needs you signed in
+OPEN = {"/api/me", "/api/signin", "/api/signup", "/api/quit"}  # everything else needs you signed in
 UI = learn.ROOT / "ui.html"
 RESULT = re.compile(r"^  (PASS|FAIL|CRASH|TODO)\s+(\S+?)(?::\s?(.*))?$")
 FRAME = re.compile(r'File "(.+?)", line (\d+)')
@@ -187,6 +190,9 @@ class Handler(BaseHTTPRequestHandler):
         if self.signed_out(action):
             return
         body = json.loads(self.rfile.read(int(self.headers.get("Content-Length") or 0)) or b"{}")
+        if action == "/api/quit":  # a newer copy of the app is taking over
+            self.send({"result": "bye"})
+            return threading.Thread(target=self.server.shutdown).start()
         try:
             if action == "/api/avatar":
                 avatar = body.get("avatar")
@@ -267,11 +273,31 @@ def open_window(url):
     webbrowser.open(url)
 
 
+def replace_running_copy():
+    """Closing the app window doesn't stop its server, so an older copy may still be running
+    (for example from before a `git pull`). Ask it to quit so this copy, with any updates, takes over."""
+    try:
+        quit_request = urllib.request.Request(f"http://127.0.0.1:{PORT}/api/quit", data=b"{}", method="POST",
+                                              headers={"X-Kit": "1", "Content-Type": "application/json"})
+        urllib.request.urlopen(quit_request, timeout=3)
+    except OSError:
+        pass  # very old copies don't know /api/quit
+    for _ in range(20):
+        try:
+            return Server(("127.0.0.1", PORT), Handler)
+        except OSError:
+            time.sleep(0.25)
+    return None
+
+
 def main():
     url = f"http://127.0.0.1:{PORT}/"
     try:
         server = Server(("127.0.0.1", PORT), Handler)
-    except OSError:  # already running: just show it
+    except OSError:
+        server = replace_running_copy()
+    if server is None:  # something else holds the port: show what's there
+        print("\n  Another copy is running and wouldn't close. Close every learn/programming console window and try again.\n")
         return open_window(url)
     print(f"\n  learn/programming is running at {url}\n  Close this window to quit.\n")
     cloud.sync_in_background()  # catch up on anything finished while offline

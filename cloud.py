@@ -157,6 +157,8 @@ def sync():
     s = session()
     if not s:
         return
+    _check_owner(s["user_id"])  # never upload one person's progress to another person's account
+    _claim(s)
     progress = learn.load_progress()
     dates = {(h["track"], h["id"]): h["date"] for h in learn.history(progress)}
     completions, solutions = [], []
