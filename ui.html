@@ -214,6 +214,15 @@
   img.avatar { object-fit: cover; padding: 0; }
   .avatar.huge { width: 96px; height: 96px; font-size: 40px; }
 
+  /* update banner */
+  .update-banner { margin: auto 12px 10px; padding: 12px 14px; border-radius: 12px; background: #f7b53812; border: 1px solid #f7b53855; }
+  .update-banner b { color: var(--gold-hi); font-size: 14px; }
+  .update-banner ul { margin: 6px 0 10px; padding-left: 18px; font-size: 12.5px; color: var(--soft); }
+  .update-banner li { margin: 2px 0; }
+  .update-banner .btn { width: 100%; justify-content: center; padding: 7px; font-size: 13.5px; }
+  .update-banner:not([hidden]) + .me-chip { margin-top: 0; }
+  .version { font: 12px var(--mono); color: var(--faint); }
+
   /* accounts + friends */
   .nav .count { margin-left: auto; min-width: 20px; height: 20px; padding: 0 6px; border-radius: 10px; background: var(--red); color: #fff; font: 700 11.5px/20px var(--mono); text-align: center; }
   .me-chip { margin-top: auto; display: flex; align-items: center; gap: 12px; padding: 14px 20px; border-top: 1px solid var(--line); }
@@ -400,6 +409,7 @@
       </div>
       <nav class="list" id="list"></nav>
     </div>
+    <div class="update-banner" id="update-banner" hidden></div>
     <a class="me-chip" id="me-chip" href="#/account"></a>
   </aside>
   <main class="main" id="main"><div class="wrap" id="view"></div></main>
@@ -527,7 +537,31 @@ function parseRoute() {
 function renderMe() {
   $("#me-chip").innerHTML = `${avatar(ME.username, ME.avatar)}<span><b>${esc(ME.username)}</b><small>${ME.sync.error ? "⚠ not synced" : "Account"}</small></span>`;
   $("#me-chip").classList.toggle("active", route.page === "account");
+  const up = ME.update || {};
+  $("#update-banner").hidden = !up.available;
+  if (up.available) {
+    $("#update-banner").innerHTML = `<b>✨ Update available</b>
+      <ul>${up.changes.slice(0, 3).map(c => `<li>${esc(c)}</li>`).join("")}${up.changes.length > 3 ? `<li>and ${up.changes.length - 3} more</li>` : ""}</ul>
+      <button class="btn primary" data-act="update">Update now</button>`;
+  }
 }
+
+// after "Update now", the app restarts itself; reload once the new version answers
+async function waitForNewVersion(old) {
+  for (let i = 0; i < 90; i++) {
+    await new Promise(r => setTimeout(r, 1000));
+    try {
+      if ((await api("/api/me")).version !== old) return location.reload();
+    } catch {}  // the server is restarting
+  }
+  toast("The update is taking a while. Try closing the app and opening it again.");
+}
+
+// check every few minutes whether the server has found an update, so the banner shows up on its own
+setInterval(async () => {
+  if (!ME.signed_in) return;
+  try { ME = await api("/api/me"); renderMe(); } catch {}
+}, 5 * 60 * 1000);
 
 async function render(keepScroll = false) {
   route = parseRoute();
@@ -802,6 +836,7 @@ async function accountPage() {
           </div></div></div>
       <p class="sub">${synced}</p>
       <div class="row-btns"><a class="btn primary" href="#/friends">Friends →</a><button class="btn" data-act="signout">Sign out</button></div>
+      <div class="version">app version ${esc(ME.version)}${ME.update?.available ? " · update available" : " · up to date"}</div>
     </div>
     ${privacyNote()}`;
 }
@@ -880,6 +915,13 @@ async function doAct(el) {
       await api("/api/signout", {});
       authMode = "signin";
       return render();
+    }
+    if (act === "update") {
+      el.disabled = true;
+      el.innerHTML = `<span class="spin"></span> Updating…`;
+      await api("/api/update", {});
+      toast("Downloaded! Restarting with the new version…");
+      return waitForNewVersion(ME.version);
     }
     if (act === "pic-remove") {
       ME = await api("/api/avatar", { avatar: null });

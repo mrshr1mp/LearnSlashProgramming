@@ -4,6 +4,7 @@ import os
 import re
 import shutil
 import subprocess
+import sys
 import threading
 import time
 import urllib.request
@@ -14,9 +15,11 @@ from urllib.parse import parse_qs, urlparse
 
 import cloud
 import learn
+import updates
 
-PORT = 8765
+PORT = int(os.environ.get("LEARN_PORT", 8765))  # override only if 8765 is taken (or for testing)
 HOSTS = {f"127.0.0.1:{PORT}", f"localhost:{PORT}"}
+VERSION = updates.version()
 OPEN = {"/api/me", "/api/signin", "/api/signup", "/api/quit"}  # everything else needs you signed in
 UI = learn.ROOT / "ui.html"
 RESULT = re.compile(r"^  (PASS|FAIL|CRASH|TODO)\s+(\S+?)(?::\s?(.*))?$")
@@ -109,12 +112,13 @@ def friend_overview(username):
 def me():
     s = cloud.session()
     if not s:
-        return {"signed_in": False}
+        return {"signed_in": False, "version": VERSION}
     try:
         avatar = cloud.my_avatar()
     except cloud.CloudError:
         avatar = None  # offline: show the letter instead
-    return {"signed_in": True, "username": s["username"], "email": s["email"], "avatar": avatar, "sync": cloud.status}
+    return {"signed_in": True, "username": s["username"], "email": s["email"], "avatar": avatar, "sync": cloud.status,
+            "version": VERSION, "update": updates.status}
 
 
 def my_code(track, mission_id):
@@ -193,6 +197,12 @@ class Handler(BaseHTTPRequestHandler):
         if action == "/api/quit":  # a newer copy of the app is taking over
             self.send({"result": "bye"})
             return threading.Thread(target=self.server.shutdown).start()
+        if action == "/api/update":
+            ok, message = updates.apply()
+            if not ok:
+                return self.send({"error": f"Couldn't update: {message}"}, 400)
+            self.send({"result": "restarting"})
+            return restart()
         try:
             if action == "/api/avatar":
                 avatar = body.get("avatar")
@@ -290,7 +300,21 @@ def replace_running_copy():
     return None
 
 
+def restart():
+    """Start the freshly downloaded version; it takes over from this copy via /api/quit."""
+    # a new console only if we're running in one (the normal double-click case)
+    flags = subprocess.CREATE_NEW_CONSOLE if os.name == "nt" and sys.stdout and sys.stdout.isatty() else 0
+    subprocess.Popen([sys.executable, str(learn.ROOT / "app.py"), "--updated", "--no-window"],
+                     cwd=learn.ROOT, creationflags=flags)
+
+
 def main():
+    if "--updated" not in sys.argv and updates.check():
+        print("\n  Updating learn/programming...")
+        ok, message = updates.apply()
+        if ok:  # run the new version instead of this one
+            sys.exit(subprocess.call([sys.executable, str(learn.ROOT / "app.py"), "--updated", *sys.argv[1:]]))
+        print(f"  Couldn't update ({message}). Starting the current version.")
     url = f"http://127.0.0.1:{PORT}/"
     try:
         server = Server(("127.0.0.1", PORT), Handler)
@@ -299,9 +323,11 @@ def main():
     if server is None:  # something else holds the port: show what's there
         print("\n  Another copy is running and wouldn't close. Close every learn/programming console window and try again.\n")
         return open_window(url)
-    print(f"\n  learn/programming is running at {url}\n  Close this window to quit.\n")
+    print(f"\n  learn/programming ({VERSION}) is running at {url}\n  Close this window to quit.\n")
     cloud.sync_in_background()  # catch up on anything finished while offline
-    open_window(url)
+    updates.check_in_background()
+    if "--no-window" not in sys.argv:  # after an in-app update, the old window just reloads
+        open_window(url)
     try:
         server.serve_forever()
     except KeyboardInterrupt:
