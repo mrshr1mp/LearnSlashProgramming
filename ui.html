@@ -7,6 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&family=Space+Grotesk:wght@500;700&display=swap">
 <script src="https://cdn.jsdelivr.net/npm/marked@12.0.2/marked.min.js"></script>
+<script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js"></script>
 <style>
   :root {
     --bg: #0a0a0b; --side: #0d0d0f; --surface: #121214; --surface-2: #19191c; --raised: #202024; --well: #070708;
@@ -148,7 +149,8 @@
   .hm-top .total b { color: var(--text); font: 700 18px var(--display); }
   .hm-top .streak { font-size: 13.5px; color: var(--muted); }
   .hm-top .streak b { color: var(--gold-hi); }
-  .hm { max-width: 780px; }
+  .hm { max-width: 780px; min-width: 0; }
+  .hm-body > *, .hm-grid { min-width: 0; }  /* let the grid shrink in narrow windows instead of spilling out */
   .hm-months, .hm-grid { display: grid; grid-template-columns: repeat(var(--weeks), 1fr); gap: 4px; }
   .hm-months { margin-left: 38px; margin-bottom: 4px; font-size: 11.5px; color: var(--muted); height: 16px; }
   .hm-months span { white-space: nowrap; overflow: visible; }
@@ -222,6 +224,26 @@
   .auth-note { text-align: center; color: var(--faint); font-size: 13px; margin-top: 22px; line-height: 1.5; }
   img.avatar { object-fit: cover; padding: 0; }
   .avatar.huge { width: 96px; height: 96px; font-size: 40px; }
+
+  /* icons (Lucide) */
+  svg.lucide { width: 1.1em; height: 1.1em; stroke-width: 2; vertical-align: -0.2em; flex: none; }
+  .btn svg.lucide { width: 16px; height: 16px; vertical-align: 0; }
+  .nav .ni svg { width: 18px; height: 18px; vertical-align: -3px; }
+  .flame { color: #ff8a3d; }
+  .pass-ic { color: var(--pass); }
+  .badge .em svg { width: 22px; height: 22px; }
+  .dot svg { width: 14px; height: 14px; stroke-width: 3; vertical-align: 0; }
+  .person .place { width: 50px; display: flex; align-items: center; gap: 3px; justify-content: flex-start; }
+  .person .place svg { width: 16px; height: 16px; }
+  .activity .ck { width: 26px; height: 26px; flex: none; border-radius: 50%; display: grid; place-items: center; background: #f7b5381c; color: var(--gold); }
+  .activity .ck svg { width: 15px; height: 15px; vertical-align: 0; }
+  .icon-btn { border: 0; background: none; cursor: pointer; opacity: .65; padding: 4px 8px; color: var(--text); }
+  .icon-btn:hover { opacity: 1; }
+  .icon-btn svg { width: 20px; height: 20px; }
+  .icon-tile svg { width: 26px; height: 26px; color: var(--accent-hi); }
+  .update-banner b svg, .brief summary svg { color: var(--gold-hi); }
+  .ghost-card .plus svg { width: 30px; height: 30px; }
+  .locked-code svg, .lb-tier svg { vertical-align: -2px; }
 
   /* text in place of icons */
   .logo-text { font: 700 0.9em var(--mono); color: var(--soft); }
@@ -364,8 +386,9 @@
   .test { padding: 12px 18px; border-bottom: 1px solid #ffffff08; display: grid; grid-template-columns: 26px 1fr; gap: 4px 10px; animation: rise .35s both; }
   .test:last-child { border-bottom: 0; }
   @keyframes rise { from { opacity: 0; transform: translateY(6px); } }
-  .test .ic { width: 9px; height: 9px; border-radius: 50%; margin: 8px 0 0 4px; background: var(--faint); }
-  .test.PASS .ic { background: var(--pass); } .test.FAIL .ic, .test.CRASH .ic { background: var(--fail); } .test.TODO .ic { background: var(--todo); }
+  .test .ic { display: grid; place-items: center; padding-top: 2px; color: var(--faint); }
+  .test .ic svg { width: 18px; height: 18px; }
+  .test.PASS .ic { color: var(--pass); } .test.FAIL .ic, .test.CRASH .ic { color: var(--fail); } .test.TODO .ic { color: var(--todo); }
   .test .tn { font-weight: 600; }
   .test .tn small { font-weight: 400; color: var(--muted); margin-left: 6px; }
   .test .body { grid-column: 2; font-size: 14.5px; color: var(--soft); }
@@ -451,11 +474,11 @@
   <aside class="side">
     <div class="brand"><div class="logo">&gt;_</div>learn<span>/</span>programming</div>
     <nav class="nav">
-      <a href="#/dashboard" data-page="dashboard"><span class="ni">⌂</span>Dashboard</a>
-      <a href="#/courses" data-page="courses"><span class="ni">▤</span>Courses</a>
-      <a href="#/friends" data-page="friends"><span class="ni">☺</span>Friends<span class="count" id="req-count" hidden></span></a>
-      <a href="#/achievements" data-page="achievements"><span class="ni">★</span>Achievements</a>
-      <a href="#/settings" data-page="settings"><span class="ni">⚙</span>Settings</a>
+      <a href="#/dashboard" data-page="dashboard"><span class="ni"><i data-lucide="house"></i></span>Dashboard</a>
+      <a href="#/courses" data-page="courses"><span class="ni"><i data-lucide="book-open"></i></span>Courses</a>
+      <a href="#/friends" data-page="friends"><span class="ni"><i data-lucide="users"></i></span>Friends<span class="count" id="req-count" hidden></span></a>
+      <a href="#/achievements" data-page="achievements"><span class="ni"><i data-lucide="trophy"></i></span>Achievements</a>
+      <a href="#/settings" data-page="settings"><span class="ni"><i data-lucide="settings"></i></span>Settings</a>
     </nav>
     <div id="course-side" hidden>
       <div class="course-title" id="course-title"></div>
@@ -500,6 +523,8 @@
 const $ = s => document.querySelector(s);
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 const human = name => name.replace(/^test_/, "").replaceAll("_", " ");
+// an icon from the Lucide set (lucide.dev); the watcher at the bottom swaps these placeholders for the real icons
+const ic = (name, cls = "") => `<i data-lucide="${name}" class="icon ${cls}"></i>`;
 const pct = (a, b) => b ? Math.round(100 * a / b) : 0;
 const store = {  // localStorage can be unavailable; the app still works without it
   get(k, d) { try { return localStorage.getItem(k) ?? d; } catch { return d; } },
@@ -567,16 +592,16 @@ function achievements(ov) {
   const { best } = streaks(ov.history);
   const count = (goal, have) => ({ got: have >= goal, have: Math.min(have, goal), goal });
   const list = [
-    { icon: "1", title: "First Steps", desc: "Complete your first mission", ...count(1, done.length) },
-    { icon: "5", title: "On a Roll", desc: "Complete 5 missions", ...count(5, done.length) },
-    { icon: "15", title: "Unstoppable", desc: "Complete 15 missions", ...count(15, done.length) },
-    { icon: "BOSS", title: "Boss Slayer", desc: "Defeat a boss mission", ...count(1, done.filter(m => m.kind === "BOSS").length) },
-    { icon: "3D", title: "Three-Day Streak", desc: "Finish missions 3 days in a row", ...count(3, best) },
-    { icon: "7D", title: "Week Warrior", desc: "Finish missions 7 days in a row", ...count(7, best) },
+    { icon: ic("footprints"), title: "First Steps", desc: "Complete your first mission", ...count(1, done.length) },
+    { icon: ic("flame"), title: "On a Roll", desc: "Complete 5 missions", ...count(5, done.length) },
+    { icon: ic("zap"), title: "Unstoppable", desc: "Complete 15 missions", ...count(15, done.length) },
+    { icon: ic("swords"), title: "Boss Slayer", desc: "Defeat a boss mission", ...count(1, done.filter(m => m.kind === "BOSS").length) },
+    { icon: ic("calendar-check"), title: "Three-Day Streak", desc: "Finish missions 3 days in a row", ...count(3, best) },
+    { icon: ic("calendar-days"), title: "Week Warrior", desc: "Finish missions 7 days in a row", ...count(7, best) },
   ];
   for (const c of ov.courses) {
     for (const ch of chapters(c.missions)) {
-      list.push({ icon: ch.name.split(" ").map(w => w[0]).join(""), title: `${ch.name} Cleared`, desc: `Finish every mission in ${c.name}: ${ch.name}`, ...count(ch.missions.length, doneCount(ch.missions)) });
+      list.push({ icon: ic("flag"), title: `${ch.name} Cleared`, desc: `Finish every mission in ${c.name}: ${ch.name}`, ...count(ch.missions.length, doneCount(ch.missions)) });
     }
     list.push({ icon: logo(c, 26), title: `${c.name} Graduate`, desc: `Finish the entire ${c.name} course`, ...count(c.missions.length, doneCount(c.missions)) });
   }
@@ -594,14 +619,14 @@ function parseRoute() {
 }
 
 function renderMe() {
-  $("#me-chip").innerHTML = `${avatar(ME.username, ME.avatar)}<span><b>${esc(ME.username)}</b><small>${ME.sync.error ? "Not synced" : "View profile"}</small></span>`;
+  $("#me-chip").innerHTML = `${avatar(ME.username, ME.avatar)}<span><b>${esc(ME.username)}</b><small>${ME.sync.error ? `${ic("triangle-alert")} Not synced` : "View profile"}</small></span>`;
   $("#me-chip").classList.toggle("active", route.page === "profile");
   const up = ME.update || {};
   $("#update-banner").hidden = !up.available;
   if (up.available) {
-    $("#update-banner").innerHTML = `<b>Update available</b>
+    $("#update-banner").innerHTML = `<b>${ic("sparkles")} Update available</b>
       <ul>${up.changes.slice(0, 3).map(c => `<li>${esc(c)}</li>`).join("")}${up.changes.length > 3 ? `<li>and ${up.changes.length - 3} more</li>` : ""}</ul>
-      <button class="btn primary" data-act="update">Update now</button>`;
+      <button class="btn primary" data-act="update">${ic("download")} Update now</button>`;
   }
 }
 
@@ -680,7 +705,7 @@ function statTiles(ov) {
   return `<div class="stats">
     <div class="stat"><div class="v gold">${ov.courses.reduce((s, c) => s + c.xp, 0)}</div><div class="l">Total XP</div></div>
     <div class="stat"><div class="v">${doneCount(ov.courses.flatMap(c => c.missions))}</div><div class="l">Missions completed</div></div>
-    <div class="stat"><div class="v">${streaks(activeDays(ov)).current}</div><div class="l">Day streak</div></div>
+    <div class="stat"><div class="v">${streaks(activeDays(ov)).current} ${ic("flame", "flame")}</div><div class="l">Day streak</div></div>
     <div class="stat"><div class="v">${ach.filter(a => a.got).length}<span style="font-size:16px;color:var(--faint)"> / ${ach.length}</span></div><div class="l">Achievements</div></div>
   </div>`;
 }
@@ -705,12 +730,12 @@ function dashboardPage() {
         <div class="bar"><div style="width:${pct(doneCount(ch.missions), ch.missions.length)}%"></div></div></div>`).join("")}</div>
     </div>`;
   })() : `<a class="card continue" href="#/courses">
-      <div class="top"><div><h3>Start your first course</h3><div class="sub">Pick a language and do mission 1. It takes about 15 minutes.</div></div></div>
+      <div class="top"><div class="icon-tile">${ic("rocket")}</div><div><h3>Start your first course</h3><div class="sub">Pick a language and do mission 1. It takes about 15 minutes.</div></div></div>
       <span class="btn primary">Browse courses →</span></a>`;
 
   const recent = O.history.slice(-6).reverse().map(h => {
     const m = titles[`${h.track}/${h.id}`];
-    return m ? `<li><div class="what"><div>${esc(m.title)}</div>
+    return m ? `<li><span class="ck">${ic("circle-check")}</span><div class="what"><div>${esc(m.title)}</div>
       <div class="when">${esc(m.course.name)} · ${whenLabel(h.date)}</div></div><span class="plus">+${m.xp}</span></li>` : "";
   }).join("");
   const nextBadge = ach.find(a => !a.got);
@@ -770,7 +795,7 @@ function heatmap(ov, weeks = 26) {
   const { current, best } = streaks(activeDays(ov));
   return `<div class="card">
     <div class="hm-top"><span class="total"><b>${total}</b> contributions in the last 6 months</span>
-      <span class="streak">Current streak <b>${current} day${current === 1 ? "" : "s"}</b> · Longest <b>${best} day${best === 1 ? "" : "s"}</b></span></div>
+      <span class="streak">${ic("flame", "flame")} Current streak <b>${current} day${current === 1 ? "" : "s"}</b> · Longest <b>${best} day${best === 1 ? "" : "s"}</b></span></div>
     <div class="hm" style="--weeks:${weeks}">
       <div class="hm-months">${months.map(m => `<span>${m}</span>`).join("")}</div>
       <div class="hm-body">
@@ -806,7 +831,7 @@ function coursesPage() {
     <p class="lede">Pick a language. Every course takes you from zero to building real things, with missions checked by real tests.</p>
     <div class="course-grid">
       ${O.courses.map(courseCard).join("")}
-      <div class="card ghost-card"><div><div class="plus">＋</div><div>More languages can be added later.</div>
+      <div class="card ghost-card"><div><div class="plus">${ic("plus")}</div><div>More languages can be added later.</div>
         <div style="font-size:13px;margin-top:6px">A new folder in <code>tracks/</code> shows up here as a course.</div></div></div>
     </div>`;
 }
@@ -817,7 +842,7 @@ function badge(a) {
     <div class="em">${a.icon}</div>
     <div style="min-width:0"><div class="bt">${esc(a.title)}</div><div class="bd">${esc(a.desc)}</div>
     ${a.goal > 1 && !a.got ? `<div class="bp"><div class="bar"><div style="width:${pct(a.have, a.goal)}%"></div></div>${a.have}/${a.goal}</div>`
-      : `<div class="bp">${a.got ? "Unlocked" : "Locked"}</div>`}</div>
+      : `<div class="bp">${a.got ? `${ic("check")} Unlocked` : `${ic("lock")} Locked`}</div>`}</div>
   </div>`;
 }
 
@@ -853,7 +878,7 @@ function authScreen() {
   return `<div class="auth-box">
     <div class="auth-brand"><div class="logo">&gt;_</div>learn<span>/</span>programming</div>
     ${form}
-    <p class="auth-note">Your code stays on this computer. Only friends you accept can see your progress,
+    <p class="auth-note">${ic("shield-check")} Your code stays on this computer. Only friends you accept can see your progress,
       and they can only read your code for missions they've finished themselves.</p>
   </div>`;
 }
@@ -895,13 +920,13 @@ async function friendsPage() {
     <p class="lede">Add friends by username. Once they accept, you can see each other's progress.</p>
     <form class="card add-friend" data-form="add">
       <input name="username" placeholder="Friend's username" required pattern="[A-Za-z0-9_]{3,20}" autocomplete="off">
-      <button class="btn primary">Send request</button></form>
+      <button class="btn primary">${ic("user-plus")} Send request</button></form>
     ${f.incoming.length ? `<div class="section-title">Requests for you</div><div class="card">${f.incoming.map(p => person(p,
       `<button class="btn primary" data-act="accept" data-name="${esc(p.username)}">Accept</button>
        <button class="btn" data-act="remove" data-name="${esc(p.username)}">Decline</button>`)).join("")}</div>` : ""}
     <div class="section-title">Leaderboard</div>
     <div class="card">${board.map((p, i) => `
-      <div class="person ${p.you ? "you" : ""}"><span class="place p${i + 1}">#${i + 1}</span>${avatar(p.username, p.avatar)}
+      <div class="person ${p.you ? "you" : ""}"><span class="place p${i + 1}">${i < 3 ? ic("medal") : ""}#${i + 1}</span>${avatar(p.username, p.avatar)}
         <b>${esc(p.username)}${p.you ? " (you)" : ""}</b><span class="spacer"></span><span class="xpv">${p.xp} XP</span>
         ${p.you ? `<a class="btn" href="#/profile">Your profile</a>` : `<a class="btn" href="#/u/${encodeURIComponent(p.username)}">View profile →</a>`}</div>`).join("")}
       ${f.friends.length ? "" : `<div class="empty">No friends yet. Send a request above!</div>`}</div>
@@ -928,10 +953,10 @@ const memberSince = iso => iso ? `Member since ${new Date(iso).toLocaleDateStrin
 
 function missionsList(ov) {
   const row = (c, m) => `<div class="fm ${m.status}">
-      <span class="dot">${m.n}</span><span class="fm-t">${esc(m.title)}</span><span class="kind k-${m.kind}">${m.kind}</span>
-      ${m.code ? `<button class="btn small" data-act="code" data-track="${esc(c.track)}" data-mission="${esc(m.id)}" data-title="${esc(m.title)}">View code</button>`
-        : m.status === "done" && m.mine ? `<span class="locked-code">Not sharing their code</span>`
-        : m.status === "done" ? `<span class="locked-code" title="Their code unlocks once you finish this mission too">Finish it to see their code</span>` : ""}
+      <span class="dot">${m.status === "done" ? ic("check") : m.n}</span><span class="fm-t">${esc(m.title)}</span><span class="kind k-${m.kind}">${m.kind}</span>
+      ${m.code ? `<button class="btn small" data-act="code" data-track="${esc(c.track)}" data-mission="${esc(m.id)}" data-title="${esc(m.title)}">${ic("code")} View code</button>`
+        : m.status === "done" && m.mine ? `<span class="locked-code">${ic("lock")} Not sharing their code</span>`
+        : m.status === "done" ? `<span class="locked-code" title="Their code unlocks once you finish this mission too">${ic("lock")} Finish it to see their code</span>` : ""}
     </div>`;
   return ov.courses.map(c => `
     <div class="section-title"><span>${esc(c.name)} missions: ${doneCount(c.missions)} of ${c.missions.length}</span></div>
@@ -946,12 +971,12 @@ function profileView(person, ov, isMe) {
   const streak = streaks(activeDays(ov)).current;
   const name = esc(person.username);
   const actions = isMe
-    ? `<label class="btn small">${person.avatar ? "Change picture" : "Add a picture"}
+    ? `<label class="btn small">${ic("image-plus")} ${person.avatar ? "Change picture" : "Add a picture"}
          <input type="file" accept="image/png,image/jpeg,image/webp,image/gif" data-pic hidden></label>
-       ${person.avatar ? `<button class="btn small" data-act="pic-remove">Remove picture</button>` : ""}
-       <a class="btn small" href="#/settings">Settings</a>`
-    : `<button class="btn small" data-act="remove" data-name="${name}" data-confirm="1">Remove friend</button>`;
-  const facts = [memberSince(person.joined), streak ? `${streak}-day streak` : "", `${earned.length} achievement${earned.length === 1 ? "" : "s"}`];
+       ${person.avatar ? `<button class="btn small" data-act="pic-remove">${ic("trash-2")} Remove picture</button>` : ""}
+       <a class="btn small" href="#/settings">${ic("settings")} Settings</a>`
+    : `<button class="btn small" data-act="remove" data-name="${name}" data-confirm="1">${ic("user-minus")} Remove friend</button>`;
+  const facts = [person.joined ? `${ic("calendar")} ${memberSince(person.joined)}` : "", streak ? `${ic("flame", "flame")} ${streak}-day streak` : "", `${ic("trophy")} ${earned.length} achievement${earned.length === 1 ? "" : "s"}`];
   return `
     ${isMe ? "" : `<div class="crumbs"><a href="#/friends">Friends</a> › ${name}</div>`}
     <div class="card profile-head">
@@ -1133,14 +1158,14 @@ function settingsPage() {
       <form class="setting" data-form="password"><span><b>Change password</b><small>At least 8 characters</small></span>
         <span class="inline"><input name="password" type="password" minlength="8" required autocomplete="new-password" placeholder="New password">
         <button class="btn">Change</button></span></form>
-      ${row("Sync", synced, `<button class="btn" data-act="sync">Sync now</button>`)}
-      ${row(`Signed in as ${esc(ME.username)}`, esc(ME.email), `<button class="btn" data-act="signout">Sign out</button>`)}
+      ${row("Sync", synced, `<button class="btn" data-act="sync">${ic("refresh-cw")} Sync now</button>`)}
+      ${row(`Signed in as ${esc(ME.username)}`, esc(ME.email), `<button class="btn" data-act="signout">${ic("log-out")} Sign out</button>`)}
     </div>
 
     <div class="section-title">About</div>
     <div class="card settings">
       ${row(`learn/programming · version ${esc(ME.version)}`, up.available ? "An update is ready to install" : "Updates install automatically when you open the app",
-        up.available ? `<button class="btn primary" data-act="update">Update now</button>` : `<button class="btn" data-act="check-update">Check for updates</button>`)}
+        up.available ? `<button class="btn primary" data-act="update">${ic("download")} Update now</button>` : `<button class="btn" data-act="check-update">${ic("refresh-cw")} Check for updates</button>`)}
     </div>`;
 }
 
@@ -1170,7 +1195,7 @@ function renderSide(xpShown = S.xp) {
       <div class="ch-bar"><div style="width:${pct(done, ch.missions.length)}%"></div></div>
       <div class="items">${ch.missions.map(m => `
         <button class="item ${m.status} ${m.n === current ? "active" : ""}" data-n="${m.n}">
-          <span class="dot">${m.n}</span>
+          <span class="dot">${m.status === "done" ? ic("check") : m.n}</span>
           <span class="t"><div class="name">${esc(m.title)}</div>
           <div class="meta"><span class="kind k-${m.kind}">${m.kind}</span><span>${m.xp} xp</span></div></span>
         </button>`).join("")}</div>
@@ -1191,24 +1216,25 @@ function renderMission() {
   $("#view").innerHTML = `
     <div class="crumbs"><a href="#/courses">Courses</a> › <a href="#/${S.track}">${logo(S, 14)} ${esc(S.name)}</a> › ${esc(m.chapter)}</div>
     <div class="head">
-      <div class="num">${esc(m.chapter)} · Mission ${m.chapter_n} / ${inChapter}${m.status === "done" ? ` <span class="done-tag">· complete</span>` : ""}</div>
+      <div class="num">${esc(m.chapter)} · Mission ${m.chapter_n} / ${inChapter}${m.status === "done" ? ` <span class="done-tag">· ${ic("check")} complete</span>` : ""}</div>
       <h1>${esc(m.title)}</h1>
       <div class="row"><span class="kind k-${m.kind}">${m.kind}</span><span class="xp-pill">${m.xp} XP</span>
         <span>your file <code>${esc(m.file)}</code></span></div>
     </div>
     <div class="actions">
       ${started
-        ? `<button class="btn check" id="check">Check my code <kbd>Ctrl+Enter</kbd></button>
-           <button class="btn" id="open">Open in VS Code</button>
+        ? `<button class="btn check" id="check">${ic("play")} Check my code <kbd>Ctrl+Enter</kbd></button>
+           <button class="btn" id="open">${ic("code")} Open in VS Code</button>
            <span class="hint-text">Save first (Ctrl+S)</span>`
-        : `<button class="btn primary" id="start">Start mission</button>
+        : `<button class="btn primary" id="start">${ic("rocket")} Start mission</button>
            <span class="hint-text">Creates your file and opens it in VS Code</span>`}
       <span class="spacer"></span>
-      <button class="btn small" id="sound">${soundOn ? "Sound on" : "Sound off"}</button>
+      <button class="icon-btn" id="sound" title="Sound on/off">${ic(soundOn ? "volume-2" : "volume-x")}</button>
     </div>
     <div id="results"></div>
     <article class="brief">${renderBrief(m.brief)}</article>`;
   document.querySelectorAll(".brief a").forEach(a => a.target = "_blank");
+  document.querySelectorAll(".brief summary").forEach(sm => sm.insertAdjacentHTML("afterbegin", ic("lightbulb") + " "));
   if (lastCheck && lastCheck.n === current) renderResults(lastCheck.data, false);
 }
 
@@ -1221,7 +1247,7 @@ function failBody(t) {
   if (got && want) {
     const quoted = s => /^['"]/.test(s);
     const note = quoted(got[1]) && !quoted(want[1])
-      ? `<p class="note">Your answer has quotes around it, so it's <b>text</b> (a string). The answer should be a plain value. Is there an f-string or <code>str()</code> where you meant to return the value itself?</p>`
+      ? `<p class="note">${ic("message-circle")} Your answer has quotes around it, so it's <b>text</b> (a string). The answer should be a plain value. Is there an f-string or <code>str()</code> where you meant to return the value itself?</p>`
       : "";
     return `<div>${esc(t.message)}</div>
       <div class="ge"><div>your code gave</div><div class="got">${esc(got[1])}</div>
@@ -1250,11 +1276,11 @@ function renderResults(r, animate = true) {
   const headline = r.passed ? "All tests passing!" : tests.length ? `${passing} of ${tests.length} tests passing` : "No test output";
   $("#results").innerHTML = `
     <section class="results ${r.passed ? "pass" : "fail"}">
-      <div class="r-head"><span class="big">${headline}</span>
+      <div class="r-head"><span class="big">${r.passed ? ic("party-popper", "pass-ic") + " " : ""}${headline}</span>
         <div class="pips">${tests.map(t => `<span class="pip ${animate ? "" : t.status}"></span>`).join("")}</div></div>
       ${tests.map((t, i) => `
         <div class="test ${t.status}" style="animation-delay:${animate ? i * 120 : 0}ms">
-          <span class="ic"></span>
+          <span class="ic">${ic({ PASS: "circle-check", FAIL: "circle-x", CRASH: "triangle-alert", TODO: "circle-dashed" }[t.status])}</span>
           <span class="tn">${esc(human(t.name))}<small>${label[t.status]}</small></span>
           ${t.status === "FAIL" ? `<div class="body">${failBody(t)}</div>` : ""}
           ${t.status === "CRASH" ? `<div class="body">${crashBody(t)}</div>` : ""}
@@ -1320,7 +1346,7 @@ function celebrate(before, badges) {
   confetti();
   $("#win-title").textContent = m.title;
   $("#win-rank").hidden = before.rank === S.rank;
-  $("#win-rank").textContent = `Rank up: ${S.rank}`;
+  $("#win-rank").innerHTML = `${ic("trending-up")} Rank up: ${esc(S.rank)}`;
   $("#win-ach").innerHTML = badges.map(a => `<div>${a.icon} Achievement unlocked: ${esc(a.title)}</div>`).join("");
   const next = S.missions.find(x => x.n > current && x.status !== "done") || nextMission(S.missions);
   $("#win-next").textContent = next ? `Next: ${next.title} →` : "You finished the course!";
@@ -1418,7 +1444,7 @@ document.addEventListener("click", e => {
   if (id === "win-stay") $("#win").classList.add("hidden");
   if (id === "sound") {
     saveSetting("sound", !soundOn);
-    e.target.textContent = !soundOn ? "Sound on" : "Sound off";
+    e.target.closest("button").innerHTML = ic(!soundOn ? "volume-2" : "volume-x");
   }
   const jump = e.target.closest("[data-line]");
   if (jump) openEditor(+jump.dataset.line);
@@ -1440,6 +1466,14 @@ window.addEventListener("focus", async () => {
     render(true);
   }
 });
+
+// whenever anything new is drawn, turn its icon placeholders into real icons (one pass per frame)
+let iconsQueued = false;
+const drawIcons = () => { iconsQueued = false; window.lucide?.createIcons(); };
+new MutationObserver(() => {
+  if (!iconsQueued) { iconsQueued = true; requestAnimationFrame(drawIcons); }
+}).observe(document.body, { childList: true, subtree: true });
+drawIcons();
 
 render();
 </script>
