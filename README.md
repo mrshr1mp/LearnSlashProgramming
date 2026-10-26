@@ -24,8 +24,15 @@ end up on someone else's account. Everyone uses their own copy of the app.
 **Setting it up on a new computer** (for a friend):
 1. Install [Python](https://www.python.org/downloads/) (tick "Add python.exe to PATH") and [VS Code](https://code.visualstudio.com/).
 2. Get the code: `git clone <repo link>`, then open the folder.
-3. Double-click `Start Learning.bat`, go to **Sign in**, and create an account.
-4. To get updates later: `git pull`.
+3. Double-click `Start Learning.bat` and **Register**.
+
+**Updates install themselves.** Every time the app opens it checks GitHub and starts the newest version, and
+while it's open it checks every 10 minutes and shows an **Update available** banner with what changed.
+Updates never touch `workspace/`, so nobody's code or progress is affected.
+
+**Shipping an update** (for whoever maintains the app): commit, then `git push`. Write a clear first line in the
+commit message; that's what everyone sees in the banner. Database changes (`supabase/schema.sql`) reach
+everyone instantly, so keep them compatible with older copies of the app that haven't updated yet.
 
 **What's private:** your code and progress live on your computer in `workspace/`, which git never uploads.
 Signing in syncs a copy to the shared database, where only friends you've accepted can read it
