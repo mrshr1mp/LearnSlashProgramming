@@ -221,10 +221,36 @@
   .switch button { background: none; border: 0; color: var(--accent-hi); font-weight: 600; cursor: pointer; padding: 0 2px; }
   .switch button:hover { text-decoration: underline; }
   .auth-note { text-align: center; color: var(--faint); font-size: 13px; margin-top: 22px; line-height: 1.5; }
-  .pic-edit { display: flex; align-items: center; gap: 18px; }
-  .pic-btns { display: flex; flex-direction: column; gap: 8px; align-items: flex-start; }
   img.avatar { object-fit: cover; padding: 0; }
   .avatar.huge { width: 96px; height: 96px; font-size: 40px; }
+
+  /* dashboard greeting (Roblox-style) */
+  .hero { display: flex; align-items: center; gap: 22px; padding: 22px 26px; margin-bottom: 22px; background: var(--surface);
+          border: 1px solid var(--line); border-radius: 18px; transition: border-color .15s; }
+  .hero:hover { border-color: var(--hover-line); }
+  .avatar.hero-av { width: 96px; height: 96px; font-size: 42px; }
+  .hero-hi { font: 700 34px/1.15 var(--display); letter-spacing: -.4px; margin-bottom: 4px; }
+
+  /* profile */
+  .profile-head { display: flex; align-items: center; gap: 26px; padding: 26px 28px; }
+  .avatar.jumbo { width: 128px; height: 128px; font-size: 56px; }
+  .ph-text h1 { margin: 0 0 4px; font: 700 38px/1.1 var(--display); letter-spacing: -.5px; word-break: break-word; }
+  .ph-actions { display: flex; gap: 8px; margin-top: 14px; flex-wrap: wrap; }
+  .ph-actions .btn { cursor: pointer; }
+  .lang-badges { display: flex; gap: 14px; flex-wrap: wrap; }
+  .lang-badge { --tier: #cd7f32; width: 172px; padding: 20px 14px 16px; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 2px;
+                background: var(--surface); border: 1px solid var(--line); border-radius: 16px; }
+  .lang-badge.silver { --tier: #c9d1db; }
+  .lang-badge.gold { --tier: var(--gold); }
+  .lang-badge.master { --tier: var(--accent); border-color: color-mix(in srgb, var(--accent) 45%, var(--line)); }
+  .lb-ring { width: 88px; height: 88px; border-radius: 50%; display: grid; place-items: center; margin-bottom: 12px;
+             background: conic-gradient(var(--tier) calc(var(--p) * 1%), var(--line) 0); }
+  .lb-inner { width: 74px; height: 74px; border-radius: 50%; display: grid; place-items: center; font-size: 34px; background: var(--surface-2); }
+  .lb-name { font: 700 17px var(--display); }
+  .lb-tier { font: 600 12.5px var(--mono); color: var(--tier); }
+  .lang-badge.bronze .lb-tier { color: #e0a36b; }
+  .lb-rank { font-size: 12.5px; color: var(--muted); }
+  @media (max-width: 820px) { .profile-head, .hero { flex-direction: column; text-align: center; } .ph-actions { justify-content: center; } }
 
   /* settings */
   .settings { padding: 4px 22px; }
@@ -270,7 +296,6 @@
   .who { display: flex; align-items: center; gap: 16px; }
   .who h3 { margin: 0; font: 700 22px var(--display); }
   .sub { color: var(--muted); font-size: 14px; }
-  .account-card { display: flex; flex-direction: column; gap: 12px; max-width: 560px; }
   .row-btns { display: flex; gap: 10px; }
   .form { display: flex; flex-direction: column; gap: 14px; }
   .form h3 { margin: 0; font: 700 20px var(--display); }
@@ -278,10 +303,6 @@
   .form label small { color: var(--faint); font-weight: 400; }
   input { font: inherit; color: var(--text); background: var(--well); border: 1px solid var(--line-2); border-radius: 10px; padding: 10px 12px; outline: none; }
   input:focus { border-color: var(--accent-hi); }
-  .note-card { margin-top: 22px; }
-  .note-card h3 { margin: 0 0 6px; font: 700 16px var(--display); }
-  .note-card ul { margin: 0; padding-left: 20px; color: var(--soft); font-size: 14.5px; }
-  .note-card li { margin: 5px 0; }
   .add-friend { display: flex; gap: 10px; padding: 14px; }
   .add-friend input { flex: 1; }
   .person { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid #ffffff08; }
@@ -445,7 +466,7 @@
       <nav class="list" id="list"></nav>
     </div>
     <div class="update-banner" id="update-banner" hidden></div>
-    <a class="me-chip" id="me-chip" href="#/account"></a>
+    <a class="me-chip" id="me-chip" href="#/profile" title="Your profile"></a>
   </aside>
   <main class="main" id="main"><div class="wrap" id="view"></div></main>
 </div>
@@ -564,14 +585,15 @@ function achievements(ov) {
 function parseRoute() {
   const parts = location.hash.replace(/^#\/?/, "").split("/").filter(Boolean);
   if (!parts.length || parts[0] === "dashboard") return { page: "dashboard" };
-  if (["courses", "achievements", "friends", "account", "settings"].includes(parts[0])) return { page: parts[0] };
+  if (["courses", "achievements", "friends", "settings", "profile"].includes(parts[0])) return { page: parts[0] };
+  if (parts[0] === "account") return { page: "profile" };  // old links
   if (parts[0] === "u") return { page: "user", name: decodeURIComponent(parts[1] || "") };
   return { page: "course", track: decodeURIComponent(parts[0]), n: +parts[1] || null };
 }
 
 function renderMe() {
-  $("#me-chip").innerHTML = `${avatar(ME.username, ME.avatar)}<span><b>${esc(ME.username)}</b><small>${ME.sync.error ? "⚠ not synced" : "Account"}</small></span>`;
-  $("#me-chip").classList.toggle("active", route.page === "account");
+  $("#me-chip").innerHTML = `${avatar(ME.username, ME.avatar)}<span><b>${esc(ME.username)}</b><small>${ME.sync.error ? "⚠ not synced" : "View profile"}</small></span>`;
+  $("#me-chip").classList.toggle("active", route.page === "profile");
   const up = ME.update || {};
   $("#update-banner").hidden = !up.available;
   if (up.available) {
@@ -619,10 +641,10 @@ async function render(keepScroll = false) {
       $("#req-count").hidden = !f.incoming.length;
       $("#req-count").textContent = f.incoming.length;
     }).catch(() => {});
-    if (["friends", "account", "user", "settings"].includes(route.page)) {
+    if (["friends", "profile", "user", "settings"].includes(route.page)) {
       $("#course-side").hidden = true;
       $("#view").innerHTML = `<div class="eyebrow">Loading…</div>`;
-      $("#view").innerHTML = await { friends: friendsPage, account: accountPage, user: userPage, settings: settingsPage }[route.page]();
+      $("#view").innerHTML = await { friends: friendsPage, profile: profilePage, user: userPage, settings: settingsPage }[route.page]();
     } else if (route.page === "course") {
       if (S?.track !== route.track) lastCheck = null;
       S = await api(`/api/state?track=${encodeURIComponent(route.track)}`);
@@ -644,6 +666,13 @@ async function render(keepScroll = false) {
 const go = hash => location.hash === hash ? render() : (location.hash = hash);
 
 /* ---------- dashboard ---------- */
+// picked once per launch, so it doesn't change every time the page refreshes
+const GREETING = (() => {
+  const h = new Date().getHours();
+  const time = h < 5 ? "Hey night owl" : h < 12 ? "Good morning" : h < 18 ? "Good afternoon" : "Good evening";
+  const options = [time, "Hello", "Welcome back", "Sup", "Hey"];
+  return options[Math.floor(Math.random() * options.length)];
+})();
 function statTiles(ov) {
   const ach = achievements(ov);
   return `<div class="stats">
@@ -685,9 +714,11 @@ function dashboardPage() {
   const nextBadge = ach.find(a => !a.got);
 
   return `
-    <div class="eyebrow">Dashboard</div>
-    <h1 class="page-title">${O.history.length ? "Welcome back" : "Welcome"}</h1>
-    <p class="lede">${course ? "Pick up where you left off. One mission a day adds up fast." : "Learn to code by building real things, one mission at a time."}</p>
+    <a class="hero" href="#/profile" title="Your profile">
+      ${avatar(ME.username, ME.avatar, "hero-av")}
+      <div><div class="hero-hi">${GREETING}, ${esc(ME.username)}!</div>
+        <div class="sub">${course ? "Pick up where you left off. One mission a day adds up fast." : "Learn to code by building real things, one mission at a time."}</div></div>
+    </a>
     ${statTiles(O)}
     <div class="section-title">Continue learning</div>
     ${cont}
@@ -850,35 +881,6 @@ document.addEventListener("change", async e => {
   }
 });
 
-function privacyNote() {
-  return `<div class="card note-card"><h3>🔒 What gets shared</h3><ul>
-    <li>Your <b>code and progress live on this computer</b>. Signing in syncs a copy so friends can see it.</li>
-    <li>Only <b>friends you accept</b> can see your progress. Strangers see nothing.</li>
-    <li>A friend can read your code for a mission <b>only after they've finished it too</b>. No spoilers.</li>
-    <li>Your password goes straight to the login server and is never saved on this computer.</li></ul></div>`;
-}
-
-async function accountPage() {
-  const s = ME.sync;
-  const synced = s.error ? `⚠ Last sync failed: ${esc(s.error)}`
-    : s.synced_at ? `✓ Progress synced at ${new Date(s.synced_at * 1000).toLocaleTimeString()}` : "Your progress syncs after every check.";
-  return `
-    <div class="eyebrow">Account</div>
-    <h1 class="page-title">Your account</h1>
-    <div class="card account-card">
-      <div class="pic-edit">${avatar(ME.username, ME.avatar, "huge")}
-        <div><h3 style="margin:0;font:700 22px var(--display)">${esc(ME.username)}</h3><div class="sub">${esc(ME.email)}</div>
-          <div class="pic-btns" style="margin-top:10px">
-            <label class="btn small">${ME.avatar ? "Change picture" : "Add a profile picture"}
-              <input type="file" accept="image/png,image/jpeg,image/webp,image/gif" data-pic hidden></label>
-            ${ME.avatar ? `<button class="linkbtn" data-act="pic-remove">Remove picture</button>` : ""}
-          </div></div></div>
-      <p class="sub">${synced}</p>
-      <div class="row-btns"><a class="btn primary" href="#/friends">Friends →</a><button class="btn" data-act="signout">Sign out</button></div>
-    </div>
-    ${privacyNote()}`;
-}
-
 /* ---------- friends ---------- */
 async function friendsPage() {
   const [f, ov] = await Promise.all([api("/api/friends"), getOverview()]);
@@ -899,38 +901,85 @@ async function friendsPage() {
     <div class="card">${board.map((p, i) => `
       <div class="person ${p.you ? "you" : ""}"><span class="place">${["🥇", "🥈", "🥉"][i] || "#" + (i + 1)}</span>${avatar(p.username, p.avatar)}
         <b>${esc(p.username)}${p.you ? " (you)" : ""}</b><span class="spacer"></span><span class="xpv">${p.xp} XP</span>
-        ${p.you ? `<a class="btn" href="#/dashboard">Dashboard</a>` : `<a class="btn" href="#/u/${encodeURIComponent(p.username)}">View profile →</a>`}</div>`).join("")}
+        ${p.you ? `<a class="btn" href="#/profile">Your profile</a>` : `<a class="btn" href="#/u/${encodeURIComponent(p.username)}">View profile →</a>`}</div>`).join("")}
       ${f.friends.length ? "" : `<div class="empty">No friends yet. Send a request above!</div>`}</div>
     ${f.outgoing.length ? `<div class="section-title">Waiting for them to accept</div><div class="card">${f.outgoing.map(p => person(p,
       `<button class="btn" data-act="remove" data-name="${esc(p.username)}">Cancel</button>`)).join("")}</div>` : ""}`;
 }
 
-async function userPage() {
-  const ov = await api(`/api/user?name=${encodeURIComponent(route.name)}`);
-  const name = esc(ov.username);
-  const earned = achievements(ov).filter(a => a.got);
+/* ---------- profiles (yours and your friends', same layout) ---------- */
+const TIERS = [[100, "master", "Mastered"], [66, "gold", "Gold"], [33, "silver", "Silver"], [0, "bronze", "Bronze"]];
+
+// one badge per coding language: its logo inside a progress ring that levels up Bronze → Silver → Gold → Mastered
+function langBadge(c) {
+  const done = doneCount(c.missions), p = pct(done, c.missions.length);
+  const [, tier, label] = TIERS.find(([min]) => p >= min);
+  return `<div class="lang-badge ${tier}" title="${esc(c.name)}: ${done} of ${c.missions.length} missions">
+    <div class="lb-ring" style="--p:${p}"><div class="lb-inner">${logo(c, 44)}</div></div>
+    <div class="lb-name">${esc(c.name)}</div>
+    <div class="lb-tier">${label} · ${p}%</div>
+    <div class="lb-rank">${esc(c.rank)}</div>
+  </div>`;
+}
+
+const memberSince = iso => iso ? `Member since ${new Date(iso).toLocaleDateString(undefined, { month: "long", year: "numeric" })}` : "";
+
+function missionsList(ov) {
   const row = (c, m) => `<div class="fm ${m.status}">
       <span class="dot">${m.status === "done" ? "✓" : m.n}</span><span class="fm-t">${esc(m.title)}</span><span class="kind k-${m.kind}">${m.kind}</span>
-      ${m.code ? `<button class="btn small" data-act="code" data-track="${c.track}" data-mission="${esc(m.id)}" data-title="${esc(m.title)}">View code</button>`
+      ${m.code ? `<button class="btn small" data-act="code" data-track="${esc(c.track)}" data-mission="${esc(m.id)}" data-title="${esc(m.title)}">View code</button>`
         : m.status === "done" && m.mine ? `<span class="locked-code">🔒 they aren't sharing their code</span>`
         : m.status === "done" ? `<span class="locked-code" title="Their code unlocks once you finish this mission too">🔒 finish it to see their code</span>` : ""}
     </div>`;
+  return ov.courses.map(c => `
+    <div class="section-title"><span>${esc(c.name)} missions: ${doneCount(c.missions)} of ${c.missions.length}</span></div>
+    <div class="card">${chapters(c.missions).map(ch => `
+      <div class="ch-label">${esc(ch.name)} <span>${doneCount(ch.missions)}/${ch.missions.length}</span></div>
+      ${ch.missions.map(m => row(c, m)).join("")}`).join("")}</div>`).join("");
+}
+
+function profileView(person, ov, isMe) {
+  const learning = ov.courses.filter(c => c.missions.some(m => m.status !== "new"));
+  const earned = achievements(ov).filter(a => a.got);
+  const streak = streaks(activeDays(ov)).current;
+  const name = esc(person.username);
+  const actions = isMe
+    ? `<label class="btn small">${person.avatar ? "Change picture" : "Add a picture"}
+         <input type="file" accept="image/png,image/jpeg,image/webp,image/gif" data-pic hidden></label>
+       ${person.avatar ? `<button class="btn small" data-act="pic-remove">Remove picture</button>` : ""}
+       <a class="btn small" href="#/settings">⚙ Settings</a>`
+    : `<button class="btn small" data-act="remove" data-name="${name}" data-confirm="1">Remove friend</button>`;
+  const facts = [memberSince(person.joined), streak ? `🔥 ${streak}-day streak` : "", `🏆 ${earned.length} achievement${earned.length === 1 ? "" : "s"}`];
   return `
-    <div class="crumbs"><a href="#/friends">Friends</a> › ${name}</div>
-    <div class="who">${avatar(ov.username, ov.avatar, "big")}
-      <div><h1 class="page-title" style="margin:0">${name}</h1>
-      <div class="sub">${ov.courses.map(c => `${esc(c.name)} · ${esc(c.rank)}`).join("  ·  ")}</div></div></div>
-    <div style="margin-top:24px">${statTiles(ov)}</div>
+    ${isMe ? "" : `<div class="crumbs"><a href="#/friends">Friends</a> › ${name}</div>`}
+    <div class="card profile-head">
+      ${avatar(person.username, person.avatar, "jumbo")}
+      <div class="ph-text">
+        <h1>${name}</h1>
+        <div class="sub">${facts.filter(Boolean).join("  ·  ")}</div>
+        <div class="ph-actions">${actions}</div>
+      </div>
+    </div>
+    <div class="section-title">Languages</div>
+    ${learning.length ? `<div class="lang-badges">${learning.map(langBadge).join("")}</div>`
+      : `<div class="card empty">${isMe ? `No languages yet. <a href="#/courses" style="color:var(--accent-hi)">Start one in Courses →</a>` : "No languages started yet."}</div>`}
+    <div class="section-title">Stats</div>
+    ${statTiles(ov)}
     <div class="section-title">Activity</div>
     ${heatmap(ov)}
-    ${ov.courses.map(c => `
-      <div class="section-title"><span>${esc(c.name)}: ${doneCount(c.missions)} of ${c.missions.length} missions</span></div>
-      <div class="card">${chapters(c.missions).map(ch => `
-        <div class="ch-label">${esc(ch.name)} <span>${doneCount(ch.missions)}/${ch.missions.length}</span></div>
-        ${ch.missions.map(m => row(c, m)).join("")}`).join("")}</div>`).join("")}
     <div class="section-title">Achievements</div>
     ${earned.length ? `<div class="badges">${earned.map(badge).join("")}</div>` : `<div class="card empty">No achievements yet.</div>`}
-    <div style="margin-top:34px"><button class="btn" data-act="remove" data-name="${name}" data-confirm="1">Remove friend</button></div>`;
+    ${isMe ? "" : missionsList(ov)}`;
+}
+
+async function profilePage() {
+  O = await getOverview();
+  return profileView(ME, O, true);
+}
+
+async function userPage() {
+  const ov = await api(`/api/user?name=${encodeURIComponent(route.name)}`);
+  return profileView(ov, ov, false);
 }
 
 async function showCode(track, mission, title) {
@@ -1380,9 +1429,9 @@ document.addEventListener("keydown", e => {
 window.addEventListener("hashchange", () => render());
 // coming back from VS Code: refresh in case files changed
 window.addEventListener("focus", async () => {
-  // Skip pages with forms: re-rendering would wipe half-typed text, and on the account page it would
+  // Skip pages with forms: re-rendering would wipe half-typed text, and on the profile page it would
   // throw away the file box just as the picture picker closes (so the chosen picture got lost).
-  if (busy || !ME.signed_in || ["account", "friends", "settings"].includes(route.page)) return;
+  if (busy || !ME.signed_in || ["profile", "friends", "settings"].includes(route.page)) return;
   if (route.page === "course" && S) {
     S = await api(`/api/state?track=${encodeURIComponent(S.track)}`);
     renderSide();

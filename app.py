@@ -108,7 +108,7 @@ def friend_overview(username):
         courses.append(info)
     history = sorted(({"track": c["track"], "id": c["mission_id"], "date": c["completed_on"]} for c in p["completions"]),
                      key=lambda h: h["date"])
-    return {"username": username, "avatar": p["avatar"], "courses": courses, "history": history,
+    return {"username": username, "avatar": p["avatar"], "joined": p["joined"], "courses": courses, "history": history,
             "checks": {a["day"]: a["checks"] for a in p["activity"]}}
 
 
@@ -117,10 +117,11 @@ def me():
     if not s:
         return {"signed_in": False, "version": VERSION, "settings": learn.load_settings()}
     try:
-        avatar = cloud.my_avatar()
+        profile = cloud.my_profile()
     except cloud.CloudError:
-        avatar = None  # offline: show the letter instead
-    return {"signed_in": True, "username": s["username"], "email": s["email"], "avatar": avatar, "sync": cloud.status,
+        profile = {"avatar": None, "created_at": None}  # offline: show the letter instead
+    return {"signed_in": True, "username": s["username"], "email": s["email"], "avatar": profile["avatar"],
+            "joined": profile["created_at"], "sync": cloud.status,
             "version": VERSION, "update": updates.status, "settings": learn.load_settings()}
 
 

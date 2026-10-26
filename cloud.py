@@ -141,23 +141,22 @@ def _rest(method, path, body=None, prefer=None):
 
 # ---------- profile picture ----------
 AVATAR = re.compile(r"^data:image/(png|jpeg|webp);base64,[A-Za-z0-9+/]+=*$")  # same rule as the database
-_avatars = {}  # user id -> data URL, so the sidebar doesn't hit the network on every page
+_profiles = {}  # user id -> {avatar, created_at}, so the sidebar doesn't hit the network on every page
 
 
-def my_avatar():
+def my_profile():
     uid = session()["user_id"]
-    if uid not in _avatars:
-        rows = _rest("GET", f"profiles?select=avatar&id=eq.{uid}")
-        _avatars[uid] = rows[0]["avatar"] if rows else None
-    return _avatars[uid]
+    if uid not in _profiles:
+        rows = _rest("GET", f"profiles?select=avatar,created_at&id=eq.{uid}")
+        _profiles[uid] = rows[0] if rows else {"avatar": None, "created_at": None}
+    return _profiles[uid]
 
 
 def set_avatar(data_url):
     if data_url is not None and (len(data_url) > 60_000 or not AVATAR.match(data_url)):
         raise CloudError("That picture couldn't be used. Try a PNG or JPG.")
-    uid = session()["user_id"]
-    _rest("PATCH", f"profiles?id=eq.{uid}", {"avatar": data_url}, "return=minimal")
-    _avatars[uid] = data_url
+    _rest("PATCH", f"profiles?id=eq.{session()['user_id']}", {"avatar": data_url}, "return=minimal")
+    my_profile()["avatar"] = data_url
 
 
 # ---------- syncing your progress ----------
@@ -233,7 +232,7 @@ def accept_friend(username):
 
 
 def _person(username):
-    rows = _rest("GET", f"profiles?select=id,avatar&username=eq.{quote(username)}")
+    rows = _rest("GET", f"profiles?select=id,avatar,created_at&username=eq.{quote(username)}")
     if not rows:
         raise CloudError(f"{username} isn't your friend")
     return rows[0]
@@ -254,6 +253,7 @@ def profile(username):
     uid = p["id"]
     return {
         "avatar": p["avatar"],
+        "joined": p["created_at"],
         "completions": _rest("GET", f"completions?select=track,mission_id,completed_on&user_id=eq.{uid}"),
         "activity": _rest("GET", f"activity?select=day,checks&user_id=eq.{uid}"),
         # only lists missions whose code you're allowed to see (ones you've finished too)
