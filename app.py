@@ -9,6 +9,7 @@ import threading
 import time
 import urllib.request
 import webbrowser
+from datetime import date, timedelta
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import parse_qs, urlparse
@@ -112,6 +113,45 @@ def friend_overview(username):
             "checks": {a["day"]: a["checks"] for a in p["activity"]}}
 
 
+def current_streak(days):
+    """Days in a row with activity, ending today or yesterday (ISO date strings)."""
+    day, streak = date.today(), 0
+    if day.isoformat() not in days:
+        day -= timedelta(days=1)  # nothing yet today doesn't break yesterday's streak
+    while day.isoformat() in days:
+        streak, day = streak + 1, day - timedelta(days=1)
+    return streak
+
+
+def friends_view(details=True):
+    """Friends with stats (XP, missions, streak, last active, rank per language), a feed of what they
+    finished recently, and this week's XP for the leaderboard."""
+    f = cloud.friends(details)
+    week_start = (date.today() - timedelta(days=6)).isoformat()
+    missions = {track: {m["id"]: m for m in learn.missions(track)} for track in learn.tracks()}
+    feed = []
+    for friend in f["friends"]:
+        uid = friend.pop("id")
+        done = [c for c in f["completions"] if c["user_id"] == uid and c["mission_id"] in missions.get(c["track"], {})]
+        days = {c["completed_on"] for c in done} | {a["day"] for a in f["activity"] if a["user_id"] == uid}
+        friend.update(xp=sum(c["xp"] for c in done), done=len(done), streak=current_streak(days),
+                      week_xp=sum(c["xp"] for c in done if c["completed_on"] >= week_start),
+                      last_active=max(days) if days else None, courses=[])
+        for track in learn.tracks():
+            ids = [c["mission_id"] for c in done if c["track"] == track]
+            if ids:
+                s = learn.summary(track, ids)
+                friend["courses"].append({"name": s["name"], "rank": s["rank"], "done": len(ids), "total": len(s["missions"])})
+        feed += [{"username": friend["username"], "avatar": friend["avatar"], "title": missions[c["track"]][c["mission_id"]]["title"],
+                  "kind": missions[c["track"]][c["mission_id"]]["kind"], "course": learn.track_cfg(c["track"])["name"],
+                  "xp": c["xp"], "date": c["completed_on"]} for c in done]
+    progress = learn.load_progress()
+    my_week = sum(m["xp"] for track in learn.tracks() for m in learn.missions(track)
+                  for h in learn.history(progress) if h["track"] == track and h["id"] == m["id"] and h["date"] >= week_start)
+    return {"friends": f["friends"], "incoming": f["incoming"], "outgoing": f["outgoing"],
+            "feed": sorted(feed, key=lambda e: e["date"], reverse=True)[:40], "my_week_xp": my_week}
+
+
 def me():
     s = cloud.session()
     if not s:
@@ -181,8 +221,8 @@ class Handler(BaseHTTPRequestHandler):
                 return self.send(me())
             if url.path == "/api/ping":  # the open window checks in so we know it's still there
                 return self.send({})
-            if url.path == "/api/friends":
-                return self.send(cloud.friends())
+            if url.path == "/api/friends":  # ?light=1: just requests, for the sidebar badge
+                return self.send(friends_view(details=q.get("light") != "1"))
             if url.path.startswith("/api/user") and not cloud.USERNAME.match(q.get("name", "")):
                 return self.send({"error": "bad username"}, 400)
             if url.path == "/api/user":

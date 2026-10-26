@@ -9,6 +9,7 @@ import re
 import threading
 import time
 import urllib.error
+from datetime import date, timedelta
 import urllib.request
 from urllib.parse import quote
 
@@ -204,23 +205,27 @@ def _ids_in(ids):
     return "(" + ",".join(ids) + ")"
 
 
-def friends():
-    """Accepted friends with their XP, plus incoming and outgoing requests."""
+def friends(details=True):
+    """Accepted friends plus incoming and outgoing requests. With details, also every friend's finished
+    missions and recent daily activity (the app turns those into stats, a feed and a leaderboard)."""
     me = session()["user_id"]
     rows = _rest("GET", "friendships?select=requester,addressee,status")
     others = {r["requester"] if r["addressee"] == me else r["addressee"] for r in rows}
     people = {p["id"]: p for p in _rest("GET", f"profiles?select=id,username,avatar&id=in.{_ids_in(others)}")} if others else {}
     accepted = [r["requester"] if r["addressee"] == me else r["addressee"] for r in rows if r["status"] == "accepted"]
-    xp = {}
-    if accepted:
-        for c in _rest("GET", f"completions?select=user_id,xp&user_id=in.{_ids_in(accepted)}"):
-            xp[c["user_id"]] = xp.get(c["user_id"], 0) + c["xp"]
     person = lambda i: {"username": people[i]["username"], "avatar": people[i]["avatar"]}
-    return {
-        "friends": [{**person(i), "xp": xp.get(i, 0)} for i in accepted if i in people],
+    result = {
+        "friends": [{**person(i), "id": i} for i in accepted if i in people],
         "incoming": [person(r["requester"]) for r in rows if r["status"] == "pending" and r["addressee"] == me and r["requester"] in people],
         "outgoing": [person(r["addressee"]) for r in rows if r["status"] == "pending" and r["requester"] == me and r["addressee"] in people],
+        "completions": [], "activity": [],
     }
+    if details and accepted:
+        ids = _ids_in(accepted)
+        since = (date.today() - timedelta(days=120)).isoformat()
+        result["completions"] = _rest("GET", f"completions?select=user_id,track,mission_id,xp,completed_on&user_id=in.{ids}")
+        result["activity"] = _rest("GET", f"activity?select=user_id,day&user_id=in.{ids}&day=gte.{since}")
+    return result
 
 
 def add_friend(username):

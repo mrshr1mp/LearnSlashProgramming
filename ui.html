@@ -279,6 +279,47 @@
   .lb-rank { font-size: 12.5px; color: var(--muted); }
   @media (max-width: 820px) { .profile-head, .hero { flex-direction: column; text-align: center; } .ph-actions { justify-content: center; } }
 
+  /* friends */
+  .friends-head { display: flex; justify-content: space-between; align-items: flex-end; gap: 20px; flex-wrap: wrap; margin-bottom: 18px; }
+  .friends-head .page-title { margin-bottom: 0; }
+  .friends-head .add-friend { display: flex; gap: 8px; padding: 0; background: none; border: 0; }
+  .friends-head .add-friend input { width: 230px; }
+  .tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--line); margin-bottom: 20px; overflow-x: auto; scrollbar-width: none; }
+  .tabs::-webkit-scrollbar { display: none; }
+  .tabs a { display: flex; align-items: center; gap: 7px; padding: 10px 14px; color: var(--muted); font-weight: 500; font-size: 14.5px;
+            border-bottom: 2px solid transparent; margin-bottom: -1px; white-space: nowrap; }
+  .tabs a:hover { color: var(--text); }
+  .tabs a.on { color: var(--text); border-bottom-color: var(--accent); }
+  .tabs a.on svg { color: var(--accent-hi); }
+  .tabs .count, .tabs .num { min-width: 20px; height: 20px; padding: 0 6px; border-radius: 10px; font: 700 11.5px/20px var(--mono); text-align: center; }
+  .tabs .count { background: var(--accent); color: #fff; }
+  .tabs .num { background: var(--surface-2); color: var(--muted); }
+  .friend-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 14px; }
+  .friend-card { display: flex; flex-direction: column; gap: 12px; padding: 18px; }
+  .fc-top { display: flex; align-items: center; gap: 14px; }
+  .fc-top:hover b { text-decoration: underline; }
+  .fc-av { position: relative; flex: none; }
+  .avatar.big { width: 56px; height: 56px; font-size: 24px; }
+  .presence { position: absolute; right: 0; bottom: 0; width: 15px; height: 15px; border-radius: 50%; background: var(--faint); border: 3px solid var(--surface); }
+  .presence.on { background: var(--pass); }
+  .fc-name { display: flex; flex-direction: column; min-width: 0; }
+  .fc-name b { font: 700 17px var(--display); overflow: hidden; text-overflow: ellipsis; }
+  .fc-name small { color: var(--muted); font-size: 13px; }
+  .fc-stats { display: flex; gap: 14px; flex-wrap: wrap; font-size: 13.5px; color: var(--muted); }
+  .fc-stats b { color: var(--text); }
+  .fc-seen { font-size: 13px; color: var(--faint); }
+  .fc-seen.on { color: var(--pass); }
+  .fc-actions { display: flex; align-items: center; justify-content: space-between; margin-top: auto; }
+  .empty-state { text-align: center; padding: 34px 20px; display: flex; flex-direction: column; align-items: center; gap: 8px; }
+  .empty-state h3 { margin: 4px 0 0; font: 700 20px var(--display); }
+  .empty-state .btn { margin-top: 8px; }
+  .es-icon { width: 54px; height: 54px; border-radius: 50%; display: grid; place-items: center; background: var(--surface-2); color: var(--accent-hi); }
+  .es-icon svg { width: 26px; height: 26px; }
+  .feed li .avatar { width: 34px; height: 34px; font-size: 14px; }
+  .feed .what b { font-weight: 600; }
+  .feed .kind { margin-left: 4px; vertical-align: 1px; }
+  .board-range { display: inline-flex; margin-bottom: 14px; }
+
   /* settings */
   .settings { padding: 4px 22px; }
   .setting { display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: 16px 0; border-bottom: 1px solid var(--line); cursor: default; }
@@ -319,7 +360,6 @@
   .avatar { width: 34px; height: 34px; flex: none; border-radius: 50%; display: grid; place-items: center; font: 700 15px var(--display);
             background: linear-gradient(135deg, var(--accent), var(--accent-deep)); color: #fff; }
   .avatar.ghost { background: var(--surface-2); color: var(--faint); border: 1px dashed var(--line-2); }
-  .avatar.big { width: 64px; height: 64px; font-size: 28px; }
   .who { display: flex; align-items: center; gap: 16px; }
   .who h3 { margin: 0; font: 700 22px var(--display); }
   .sub { color: var(--muted); font-size: 14px; }
@@ -612,7 +652,8 @@ function achievements(ov) {
 function parseRoute() {
   const parts = location.hash.replace(/^#\/?/, "").split("/").filter(Boolean);
   if (!parts.length || parts[0] === "dashboard") return { page: "dashboard" };
-  if (["courses", "achievements", "friends", "settings", "profile"].includes(parts[0])) return { page: parts[0] };
+  if (parts[0] === "friends") return { page: "friends", tab: parts[1] || "list" };
+  if (["courses", "achievements", "settings", "profile"].includes(parts[0])) return { page: parts[0] };
   if (parts[0] === "account") return { page: "profile" };  // old links
   if (parts[0] === "u") return { page: "user", name: decodeURIComponent(parts[1] || "") };
   return { page: "course", track: decodeURIComponent(parts[0]), n: +parts[1] || null };
@@ -664,7 +705,7 @@ async function render(keepScroll = false) {
       return;
     }
     renderMe();
-    api("/api/friends").then(f => {  // badge for waiting friend requests
+    api("/api/friends?light=1").then(f => {  // badge for waiting friend requests
       $("#req-count").hidden = !f.incoming.length;
       $("#req-count").textContent = f.incoming.length;
     }).catch(() => {});
@@ -909,29 +950,101 @@ document.addEventListener("change", async e => {
 });
 
 /* ---------- friends ---------- */
-async function friendsPage() {
-  const [f, ov] = await Promise.all([api("/api/friends"), getOverview()]);
-  const board = [...f.friends, { username: ME.username, avatar: ME.avatar, xp: ov.courses.reduce((s, c) => s + c.xp, 0), you: true }]
-    .sort((a, b) => b.xp - a.xp);
+const FRIEND_TABS = [["list", "Friends", "users"], ["requests", "Requests", "user-plus"], ["activity", "Activity", "activity"], ["leaderboard", "Leaderboard", "trophy"]];
+
+function lastActive(iso) {
+  if (!iso) return { text: "No activity yet", on: false };
+  const d = dayDiff(iso, todayIso());
+  return { text: d === 0 ? "Active today" : d === 1 ? "Active yesterday" : `Active ${d} days ago`, on: d === 0 };
+}
+
+function friendCard(f) {
+  const seen = lastActive(f.last_active);
+  const main = f.courses[0];
+  return `<div class="card friend-card">
+    <a class="fc-top" href="#/u/${encodeURIComponent(f.username)}">
+      <span class="fc-av">${avatar(f.username, f.avatar, "big")}<span class="presence ${seen.on ? "on" : ""}"></span></span>
+      <span class="fc-name"><b>${esc(f.username)}</b><small>${main ? `${esc(main.name)} · ${esc(main.rank)}` : "Just getting started"}</small></span>
+    </a>
+    <div class="fc-stats">
+      <span><b>${f.xp}</b> XP</span><span><b>${f.done}</b> missions</span><span>${ic("flame", "flame")} <b>${f.streak}</b> day${f.streak === 1 ? "" : "s"}</span>
+    </div>
+    <div class="fc-seen ${seen.on ? "on" : ""}">${ic("clock")} ${seen.text}</div>
+    <div class="fc-actions">
+      <a class="btn small" href="#/u/${encodeURIComponent(f.username)}">${ic("user")} View profile</a>
+      <button class="icon-btn" data-act="remove" data-name="${esc(f.username)}" data-confirm="1" title="Remove friend">${ic("user-minus")}</button>
+    </div>
+  </div>`;
+}
+
+function friendsList(f) {
+  if (!f.friends.length) {
+    return `<div class="card empty-state">
+      <div class="es-icon">${ic("users")}</div>
+      <h3>No friends yet</h3>
+      <p class="sub">Send a request with the box above, or share your username so friends can add you.</p>
+      <button class="btn" data-act="copy-name">${ic("copy")} Copy my username (${esc(ME.username)})</button>
+    </div>`;
+  }
+  const sorted = [...f.friends].sort((a, b) => (b.last_active || "").localeCompare(a.last_active || ""));
+  return `<div class="friend-grid">${sorted.map(friendCard).join("")}</div>`;
+}
+
+function requestsTab(f) {
   const person = (p, extra) => `<div class="person">${avatar(p.username, p.avatar)}<b>${esc(p.username)}</b><span class="spacer"></span>${extra}</div>`;
   return `
-    <div class="eyebrow">Friends</div>
-    <h1 class="page-title">Friends</h1>
-    <p class="lede">Add friends by username. Once they accept, you can see each other's progress.</p>
-    <form class="card add-friend" data-form="add">
-      <input name="username" placeholder="Friend's username" required pattern="[A-Za-z0-9_]{3,20}" autocomplete="off">
-      <button class="btn primary">${ic("user-plus")} Send request</button></form>
-    ${f.incoming.length ? `<div class="section-title">Requests for you</div><div class="card">${f.incoming.map(p => person(p,
-      `<button class="btn primary" data-act="accept" data-name="${esc(p.username)}">Accept</button>
-       <button class="btn" data-act="remove" data-name="${esc(p.username)}">Decline</button>`)).join("")}</div>` : ""}
-    <div class="section-title">Leaderboard</div>
+    <div class="section-title">Requests for you</div>
+    <div class="card">${f.incoming.length ? f.incoming.map(p => person(p,
+      `<button class="btn primary small" data-act="accept" data-name="${esc(p.username)}">${ic("check")} Accept</button>
+       <button class="btn small" data-act="remove" data-name="${esc(p.username)}">${ic("x")} Decline</button>`)).join("")
+      : `<div class="empty">No requests right now.</div>`}</div>
+    <div class="section-title">Sent by you</div>
+    <div class="card">${f.outgoing.length ? f.outgoing.map(p => person(p,
+      `<span class="sub">${ic("clock")} Waiting</span><button class="btn small" data-act="remove" data-name="${esc(p.username)}">Cancel</button>`)).join("")
+      : `<div class="empty">You haven't sent any requests that are still waiting.</div>`}</div>`;
+}
+
+function activityTab(f) {
+  if (!f.feed.length) return `<div class="card empty-state"><div class="es-icon">${ic("activity")}</div><h3>Nothing yet</h3>
+    <p class="sub">When your friends finish missions, it shows up here.</p></div>`;
+  return `<div class="card"><ul class="activity feed">${f.feed.map(e => `
+    <li>${avatar(e.username, e.avatar)}
+      <div class="what"><div><b>${esc(e.username)}</b> finished <b>${esc(e.title)}</b> <span class="kind k-${e.kind}">${e.kind}</span></div>
+        <div class="when">${esc(e.course)} · ${whenLabel(e.date)}</div></div>
+      <span class="plus">+${e.xp}</span></li>`).join("")}</ul></div>`;
+}
+
+let boardRange = "all";
+function leaderboardTab(f, ov) {
+  const key = boardRange === "week" ? "week_xp" : "xp";
+  const me = { username: ME.username, avatar: ME.avatar, you: true, xp: ov.courses.reduce((t, c) => t + c.xp, 0), week_xp: f.my_week_xp };
+  const board = [...f.friends, me].sort((a, b) => b[key] - a[key]);
+  return `
+    <div class="seg board-range">${[["all", "All time"], ["week", "This week"]].map(([v, l]) =>
+      `<button class="${boardRange === v ? "on" : ""}" data-act="board-range" data-value="${v}">${l}</button>`).join("")}</div>
     <div class="card">${board.map((p, i) => `
       <div class="person ${p.you ? "you" : ""}"><span class="place p${i + 1}">${i < 3 ? ic("medal") : ""}#${i + 1}</span>${avatar(p.username, p.avatar)}
-        <b>${esc(p.username)}${p.you ? " (you)" : ""}</b><span class="spacer"></span><span class="xpv">${p.xp} XP</span>
-        ${p.you ? `<a class="btn" href="#/profile">Your profile</a>` : `<a class="btn" href="#/u/${encodeURIComponent(p.username)}">View profile →</a>`}</div>`).join("")}
-      ${f.friends.length ? "" : `<div class="empty">No friends yet. Send a request above!</div>`}</div>
-    ${f.outgoing.length ? `<div class="section-title">Waiting for them to accept</div><div class="card">${f.outgoing.map(p => person(p,
-      `<button class="btn" data-act="remove" data-name="${esc(p.username)}">Cancel</button>`)).join("")}</div>` : ""}`;
+        <b>${esc(p.username)}${p.you ? " (you)" : ""}</b><span class="spacer"></span><span class="xpv">${p[key]} XP</span>
+        <a class="btn small" href="${p.you ? "#/profile" : `#/u/${encodeURIComponent(p.username)}`}">${p.you ? "Your profile" : "View profile"}</a></div>`).join("")}
+      ${f.friends.length ? "" : `<div class="empty">Add friends to compete with them here.</div>`}</div>`;
+}
+
+async function friendsPage() {
+  const [f, ov] = await Promise.all([api("/api/friends"), getOverview()]);
+  const tab = FRIEND_TABS.some(([k]) => k === route.tab) ? route.tab : "list";
+  const count = { list: f.friends.length, requests: f.incoming.length };
+  const body = { list: () => friendsList(f), requests: () => requestsTab(f), activity: () => activityTab(f), leaderboard: () => leaderboardTab(f, ov) }[tab]();
+  return `
+    <div class="friends-head">
+      <div><div class="eyebrow">Friends</div><h1 class="page-title">Friends</h1></div>
+      <form class="add-friend" data-form="add">
+        <input name="username" placeholder="Add a friend by username" required pattern="[A-Za-z0-9_]{3,20}" autocomplete="off">
+        <button class="btn primary">${ic("user-plus")} Send request</button></form>
+    </div>
+    <nav class="tabs">${FRIEND_TABS.map(([k, label, icon]) => `
+      <a href="#/friends${k === "list" ? "" : "/" + k}" class="${tab === k ? "on" : ""}">${ic(icon)} ${label}
+        ${count[k] ? `<span class="${k === "requests" ? "count" : "num"}">${count[k]}</span>` : ""}</a>`).join("")}</nav>
+    ${body}`;
 }
 
 /* ---------- profiles (yours and your friends', same layout) ---------- */
@@ -1030,6 +1143,14 @@ async function doAct(el) {
       await api("/api/signout", {});
       authMode = "signin";
       return render();
+    }
+    if (act === "copy-name") {
+      await navigator.clipboard.writeText(ME.username);
+      return toast(`Copied "${ME.username}". Send it to a friend!`);
+    }
+    if (act === "board-range") {
+      boardRange = el.dataset.value;
+      return render(true);
     }
     if (act === "sync") {
       el.disabled = true;
