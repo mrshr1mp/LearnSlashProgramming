@@ -97,11 +97,13 @@ def friend_overview(username):
     for c in p["completions"]:
         finished.setdefault(c["track"], []).append(c["mission_id"])
     readable = {(r["track"], r["mission_id"]) for r in p["readable"]}
+    mine = learn.load_progress()
     courses = []
     for track in learn.tracks():
         info = course_info(track, learn.summary(track, finished.get(track, [])))
         for m in info["missions"]:
             m["code"] = (track, m["id"]) in readable
+            m["mine"] = m["id"] in mine.get(track, [])  # so the app can say "finish it" vs "not shared"
         courses.append(info)
     history = sorted(({"track": c["track"], "id": c["mission_id"], "date": c["completed_on"]} for c in p["completions"]),
                      key=lambda h: h["date"])
@@ -112,13 +114,13 @@ def friend_overview(username):
 def me():
     s = cloud.session()
     if not s:
-        return {"signed_in": False, "version": VERSION}
+        return {"signed_in": False, "version": VERSION, "settings": learn.load_settings()}
     try:
         avatar = cloud.my_avatar()
     except cloud.CloudError:
         avatar = None  # offline: show the letter instead
     return {"signed_in": True, "username": s["username"], "email": s["email"], "avatar": avatar, "sync": cloud.status,
-            "version": VERSION, "update": updates.status}
+            "version": VERSION, "update": updates.status, "settings": learn.load_settings()}
 
 
 def my_code(track, mission_id):
@@ -204,6 +206,20 @@ class Handler(BaseHTTPRequestHandler):
             self.send({"result": "restarting"})
             return restart()
         try:
+            if action == "/api/settings":
+                before = learn.load_settings()["share_code"]
+                if learn.save_settings(body)["share_code"] != before:
+                    cloud.sync_in_background()  # share or take down code right away
+                return self.send(me())
+            if action == "/api/password":
+                cloud.change_password(body.get("password", ""))
+                return self.send({"result": "changed"})
+            if action == "/api/sync":
+                cloud.sync()
+                return self.send(me())
+            if action == "/api/update/check":
+                updates.check()
+                return self.send(me())
             if action == "/api/avatar":
                 avatar = body.get("avatar")
                 cloud.set_avatar(avatar if isinstance(avatar, str) else None)
@@ -247,7 +263,7 @@ class Handler(BaseHTTPRequestHandler):
 
         if action == "/api/start":
             learn.prepare(track, m)
-            opened = learn.open_in_editor(target)
+            opened = learn.load_settings()["open_vscode"] and learn.open_in_editor(target)
             return self.send({"state": state(track), "opened": opened})
         if action == "/api/open":
             line = body.get("line")

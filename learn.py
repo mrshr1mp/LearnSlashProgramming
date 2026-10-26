@@ -37,6 +37,28 @@ def save_progress(progress):
     PROGRESS.write_text(json.dumps(progress, indent=2))
 
 
+SETTINGS = WORK / "settings.json"
+DEFAULT_SETTINGS = {"accent": "red", "background": "dark", "sound": True, "confetti": True, "reduce_motion": False,
+                    "open_vscode": True, "share_code": True}
+CHOICES = {"accent": {"red", "orange", "gold", "green", "blue", "purple", "pink"}, "background": {"dark", "black"}}
+
+
+def load_settings():
+    saved = json.loads(SETTINGS.read_text()) if SETTINGS.exists() else {}
+    return {**DEFAULT_SETTINGS, **{k: v for k, v in saved.items() if k in DEFAULT_SETTINGS}}
+
+
+def save_settings(changes):
+    """Apply only known settings with allowed values; anything else is ignored."""
+    settings = load_settings()
+    for key, value in changes.items():
+        if key in CHOICES and value in CHOICES[key] or key in DEFAULT_SETTINGS and key not in CHOICES and isinstance(value, bool):
+            settings[key] = value
+    SETTINGS.parent.mkdir(parents=True, exist_ok=True)
+    SETTINGS.write_text(json.dumps(settings, indent=2))
+    return settings
+
+
 def summary(track, done=None):
     """XP, rank and mission statuses. `done` defaults to your own finished missions (pass a friend's instead)."""
     cfg = track_cfg(track)
@@ -155,7 +177,8 @@ def main():
     if args.action == "start":
         target = prepare(args.track, m)
         print(f"\n  {m['title']}\n  brief: {m['dir'] / 'mission.md'}\n  code:  {target}\n")
-        open_in_editor(target)
+        if load_settings()["open_vscode"]:
+            open_in_editor(target)
         return
     if not (WORK / args.track / m["file"]).exists():
         sys.exit(f"  Start the mission first: python learn.py start {m['n']}")

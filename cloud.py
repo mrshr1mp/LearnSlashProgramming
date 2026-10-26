@@ -113,6 +113,15 @@ def sign_in(email, password):
     return _claim(_save_session(auth))
 
 
+def change_password(new_password):
+    if len(new_password or "") < 8:
+        raise CloudError("Use at least 8 characters")
+    s = session()
+    if not s:
+        raise CloudError("You're signed out")
+    _request("PUT", "/auth/v1/user", {"password": new_password}, s["access_token"])
+
+
 def sign_out():
     s = session()
     if s:
@@ -171,6 +180,9 @@ def sync():
             f = learn.WORK / track / m["file"]
             if f.exists() and f.stat().st_size <= MAX_CODE:
                 solutions.append({**key, "filename": f.name, "code": f.read_text(encoding="utf-8", errors="replace")})
+    if not learn.load_settings()["share_code"]:  # Settings → Privacy: take any shared code back down
+        solutions = []
+        _rest("DELETE", f"solutions?user_id=eq.{s['user_id']}", prefer="return=minimal")
     activity = [{"user_id": s["user_id"], "day": day, "checks": n} for day, n in progress.get("_checks", {}).items()]
     upsert = "resolution=merge-duplicates,return=minimal"
     for table, rows in [("completions", completions), ("solutions", solutions), ("activity", activity)]:
