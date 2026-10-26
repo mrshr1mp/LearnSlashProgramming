@@ -1,6 +1,5 @@
 {
   "name": "Python",
-  "icon": "🐍",
   "logo": "https://cdn.jsdelivr.net/npm/devicon@2.16.0/icons/python/python-original.svg",
   "description": "From your very first line of code to building your own programming language. Lessons, real tools, puzzles and bosses.",
   "run": ["{python}", "{track}/harness.py", "{test}", "{solution}"],

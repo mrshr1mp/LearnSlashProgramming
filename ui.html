@@ -166,7 +166,6 @@
   .activity { list-style: none; margin: 0; padding: 0; }
   .activity li { display: flex; gap: 12px; align-items: center; padding: 10px 0; border-bottom: 1px solid #ffffff08; font-size: 14.5px; }
   .activity li:last-child { border-bottom: 0; }
-  .activity .ck { width: 26px; height: 26px; flex: none; border-radius: 50%; display: grid; place-items: center; background: #f7b5381c; color: var(--gold); font-size: 13px; }
   .activity .what { flex: 1; min-width: 0; }
   .activity .what div { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .activity .when { font-size: 12.5px; color: var(--faint); }
@@ -223,6 +222,12 @@
   .auth-note { text-align: center; color: var(--faint); font-size: 13px; margin-top: 22px; line-height: 1.5; }
   img.avatar { object-fit: cover; padding: 0; }
   .avatar.huge { width: 96px; height: 96px; font-size: 40px; }
+
+  /* text in place of icons */
+  .logo-text { font: 700 0.9em var(--mono); color: var(--soft); }
+  .badge .em { font: 700 13px var(--mono); color: var(--gold-hi); letter-spacing: .5px; }
+  .badge.locked .em { color: var(--faint); }
+  .person .place.p1 { color: var(--gold-hi); } .person .place.p2 { color: #c9d1db; } .person .place.p3 { color: #e0a36b; }
 
   /* dashboard greeting (Roblox-style) */
   .hero { display: flex; align-items: center; gap: 22px; padding: 22px 26px; margin-bottom: 22px; background: var(--surface);
@@ -347,8 +352,6 @@
   .hint-text { font-size: 13px; color: var(--faint); }
   .spacer { flex: 1; }
   kbd { font-size: 10.5px; padding: 1px 5px; border-radius: 4px; border: 1px solid #ffffff55; opacity: .85; }
-  .icon-btn { border: 0; background: none; cursor: pointer; font-size: 17px; opacity: .6; padding: 4px 8px; }
-  .icon-btn:hover { opacity: 1; }
 
   .results { margin: 18px 0 8px; border: 1px solid var(--line); border-radius: 16px; background: var(--surface); overflow: hidden; }
   .results.pass { border-color: #34d39966; }
@@ -361,8 +364,8 @@
   .test { padding: 12px 18px; border-bottom: 1px solid #ffffff08; display: grid; grid-template-columns: 26px 1fr; gap: 4px 10px; animation: rise .35s both; }
   .test:last-child { border-bottom: 0; }
   @keyframes rise { from { opacity: 0; transform: translateY(6px); } }
-  .test .ic { font-weight: 800; font-size: 16px; line-height: 1.5; }
-  .test.PASS .ic { color: var(--pass); } .test.FAIL .ic, .test.CRASH .ic { color: var(--fail); } .test.TODO .ic { color: var(--todo); }
+  .test .ic { width: 9px; height: 9px; border-radius: 50%; margin: 8px 0 0 4px; background: var(--faint); }
+  .test.PASS .ic { background: var(--pass); } .test.FAIL .ic, .test.CRASH .ic { background: var(--fail); } .test.TODO .ic { background: var(--todo); }
   .test .tn { font-weight: 600; }
   .test .tn small { font-weight: 400; color: var(--muted); margin-left: 6px; }
   .test .body { grid-column: 2; font-size: 14.5px; color: var(--soft); }
@@ -408,7 +411,6 @@
   .brief details[open] { border-color: #f7b53866; background: #18120a; }
   .brief summary { cursor: pointer; padding: 12px 0; font-weight: 600; color: var(--gold); list-style: none; }
   .brief summary::-webkit-details-marker { display: none; }
-  .brief summary::before { content: "💡  "; }
   .brief details[open] summary { border-bottom: 1px dashed #f7b53833; margin-bottom: 4px; }
 
   /* ---------- toast + win ---------- */
@@ -535,8 +537,8 @@ const isoOf = t => `${t.getFullYear()}-${String(t.getMonth() + 1).padStart(2, "0
 const todayIso = () => isoOf(new Date());
 // the course's real logo, falling back to its emoji if the image can't load (offline)
 const logo = (c, size = 28) => c.logo
-  ? `<img class="logo-img" src="${esc(c.logo)}" alt="${esc(c.name)}" width="${size}" height="${size}" onerror="this.replaceWith('${c.icon || "🎓"}')">`
-  : esc(c.icon || "🎓");
+  ? `<img class="logo-img" src="${esc(c.logo)}" alt="${esc(c.name)}" width="${size}" height="${size}" onerror="this.replaceWith('${esc(c.name.slice(0, 2))}')">`
+  : `<span class="logo-text">${esc(c.name.slice(0, 2))}</span>`;
 const dayDiff = (a, b) => Math.round((Date.parse(b) - Date.parse(a)) / 864e5);
 
 function streaks(history) {
@@ -565,16 +567,16 @@ function achievements(ov) {
   const { best } = streaks(ov.history);
   const count = (goal, have) => ({ got: have >= goal, have: Math.min(have, goal), goal });
   const list = [
-    { icon: "👣", title: "First Steps", desc: "Complete your first mission", ...count(1, done.length) },
-    { icon: "🔥", title: "On a Roll", desc: "Complete 5 missions", ...count(5, done.length) },
-    { icon: "⚡", title: "Unstoppable", desc: "Complete 15 missions", ...count(15, done.length) },
-    { icon: "⚔️", title: "Boss Slayer", desc: "Defeat a boss mission", ...count(1, done.filter(m => m.kind === "BOSS").length) },
-    { icon: "📅", title: "Three-Day Streak", desc: "Finish missions 3 days in a row", ...count(3, best) },
-    { icon: "🗓️", title: "Week Warrior", desc: "Finish missions 7 days in a row", ...count(7, best) },
+    { icon: "1", title: "First Steps", desc: "Complete your first mission", ...count(1, done.length) },
+    { icon: "5", title: "On a Roll", desc: "Complete 5 missions", ...count(5, done.length) },
+    { icon: "15", title: "Unstoppable", desc: "Complete 15 missions", ...count(15, done.length) },
+    { icon: "BOSS", title: "Boss Slayer", desc: "Defeat a boss mission", ...count(1, done.filter(m => m.kind === "BOSS").length) },
+    { icon: "3D", title: "Three-Day Streak", desc: "Finish missions 3 days in a row", ...count(3, best) },
+    { icon: "7D", title: "Week Warrior", desc: "Finish missions 7 days in a row", ...count(7, best) },
   ];
   for (const c of ov.courses) {
     for (const ch of chapters(c.missions)) {
-      list.push({ icon: "🏁", title: `${ch.name} Cleared`, desc: `Finish every mission in ${c.name}: ${ch.name}`, ...count(ch.missions.length, doneCount(ch.missions)) });
+      list.push({ icon: ch.name.split(" ").map(w => w[0]).join(""), title: `${ch.name} Cleared`, desc: `Finish every mission in ${c.name}: ${ch.name}`, ...count(ch.missions.length, doneCount(ch.missions)) });
     }
     list.push({ icon: logo(c, 26), title: `${c.name} Graduate`, desc: `Finish the entire ${c.name} course`, ...count(c.missions.length, doneCount(c.missions)) });
   }
@@ -592,12 +594,12 @@ function parseRoute() {
 }
 
 function renderMe() {
-  $("#me-chip").innerHTML = `${avatar(ME.username, ME.avatar)}<span><b>${esc(ME.username)}</b><small>${ME.sync.error ? "⚠ not synced" : "View profile"}</small></span>`;
+  $("#me-chip").innerHTML = `${avatar(ME.username, ME.avatar)}<span><b>${esc(ME.username)}</b><small>${ME.sync.error ? "Not synced" : "View profile"}</small></span>`;
   $("#me-chip").classList.toggle("active", route.page === "profile");
   const up = ME.update || {};
   $("#update-banner").hidden = !up.available;
   if (up.available) {
-    $("#update-banner").innerHTML = `<b>✨ Update available</b>
+    $("#update-banner").innerHTML = `<b>Update available</b>
       <ul>${up.changes.slice(0, 3).map(c => `<li>${esc(c)}</li>`).join("")}${up.changes.length > 3 ? `<li>and ${up.changes.length - 3} more</li>` : ""}</ul>
       <button class="btn primary" data-act="update">Update now</button>`;
   }
@@ -678,7 +680,7 @@ function statTiles(ov) {
   return `<div class="stats">
     <div class="stat"><div class="v gold">${ov.courses.reduce((s, c) => s + c.xp, 0)}</div><div class="l">Total XP</div></div>
     <div class="stat"><div class="v">${doneCount(ov.courses.flatMap(c => c.missions))}</div><div class="l">Missions completed</div></div>
-    <div class="stat"><div class="v">${streaks(activeDays(ov)).current} 🔥</div><div class="l">Day streak</div></div>
+    <div class="stat"><div class="v">${streaks(activeDays(ov)).current}</div><div class="l">Day streak</div></div>
     <div class="stat"><div class="v">${ach.filter(a => a.got).length}<span style="font-size:16px;color:var(--faint)"> / ${ach.length}</span></div><div class="l">Achievements</div></div>
   </div>`;
 }
@@ -703,12 +705,12 @@ function dashboardPage() {
         <div class="bar"><div style="width:${pct(doneCount(ch.missions), ch.missions.length)}%"></div></div></div>`).join("")}</div>
     </div>`;
   })() : `<a class="card continue" href="#/courses">
-      <div class="top"><div class="icon-tile">🚀</div><div><h3>Start your first course</h3><div class="sub">Pick a language and do mission 1. It takes about 15 minutes.</div></div></div>
+      <div class="top"><div><h3>Start your first course</h3><div class="sub">Pick a language and do mission 1. It takes about 15 minutes.</div></div></div>
       <span class="btn primary">Browse courses →</span></a>`;
 
   const recent = O.history.slice(-6).reverse().map(h => {
     const m = titles[`${h.track}/${h.id}`];
-    return m ? `<li><span class="ck">✓</span><div class="what"><div>${esc(m.title)}</div>
+    return m ? `<li><div class="what"><div>${esc(m.title)}</div>
       <div class="when">${esc(m.course.name)} · ${whenLabel(h.date)}</div></div><span class="plus">+${m.xp}</span></li>` : "";
   }).join("");
   const nextBadge = ach.find(a => !a.got);
@@ -768,7 +770,7 @@ function heatmap(ov, weeks = 26) {
   const { current, best } = streaks(activeDays(ov));
   return `<div class="card">
     <div class="hm-top"><span class="total"><b>${total}</b> contributions in the last 6 months</span>
-      <span class="streak">🔥 Current streak <b>${current} day${current === 1 ? "" : "s"}</b> · Longest <b>${best} day${best === 1 ? "" : "s"}</b></span></div>
+      <span class="streak">Current streak <b>${current} day${current === 1 ? "" : "s"}</b> · Longest <b>${best} day${best === 1 ? "" : "s"}</b></span></div>
     <div class="hm" style="--weeks:${weeks}">
       <div class="hm-months">${months.map(m => `<span>${m}</span>`).join("")}</div>
       <div class="hm-body">
@@ -815,7 +817,7 @@ function badge(a) {
     <div class="em">${a.icon}</div>
     <div style="min-width:0"><div class="bt">${esc(a.title)}</div><div class="bd">${esc(a.desc)}</div>
     ${a.goal > 1 && !a.got ? `<div class="bp"><div class="bar"><div style="width:${pct(a.have, a.goal)}%"></div></div>${a.have}/${a.goal}</div>`
-      : `<div class="bp">${a.got ? "✓ Unlocked" : "🔒 Locked"}</div>`}</div>
+      : `<div class="bp">${a.got ? "Unlocked" : "Locked"}</div>`}</div>
   </div>`;
 }
 
@@ -851,7 +853,7 @@ function authScreen() {
   return `<div class="auth-box">
     <div class="auth-brand"><div class="logo">&gt;_</div>learn<span>/</span>programming</div>
     ${form}
-    <p class="auth-note">🔒 Your code stays on this computer. Only friends you accept can see your progress,
+    <p class="auth-note">Your code stays on this computer. Only friends you accept can see your progress,
       and they can only read your code for missions they've finished themselves.</p>
   </div>`;
 }
@@ -899,7 +901,7 @@ async function friendsPage() {
        <button class="btn" data-act="remove" data-name="${esc(p.username)}">Decline</button>`)).join("")}</div>` : ""}
     <div class="section-title">Leaderboard</div>
     <div class="card">${board.map((p, i) => `
-      <div class="person ${p.you ? "you" : ""}"><span class="place">${["🥇", "🥈", "🥉"][i] || "#" + (i + 1)}</span>${avatar(p.username, p.avatar)}
+      <div class="person ${p.you ? "you" : ""}"><span class="place p${i + 1}">#${i + 1}</span>${avatar(p.username, p.avatar)}
         <b>${esc(p.username)}${p.you ? " (you)" : ""}</b><span class="spacer"></span><span class="xpv">${p.xp} XP</span>
         ${p.you ? `<a class="btn" href="#/profile">Your profile</a>` : `<a class="btn" href="#/u/${encodeURIComponent(p.username)}">View profile →</a>`}</div>`).join("")}
       ${f.friends.length ? "" : `<div class="empty">No friends yet. Send a request above!</div>`}</div>
@@ -926,10 +928,10 @@ const memberSince = iso => iso ? `Member since ${new Date(iso).toLocaleDateStrin
 
 function missionsList(ov) {
   const row = (c, m) => `<div class="fm ${m.status}">
-      <span class="dot">${m.status === "done" ? "✓" : m.n}</span><span class="fm-t">${esc(m.title)}</span><span class="kind k-${m.kind}">${m.kind}</span>
+      <span class="dot">${m.n}</span><span class="fm-t">${esc(m.title)}</span><span class="kind k-${m.kind}">${m.kind}</span>
       ${m.code ? `<button class="btn small" data-act="code" data-track="${esc(c.track)}" data-mission="${esc(m.id)}" data-title="${esc(m.title)}">View code</button>`
-        : m.status === "done" && m.mine ? `<span class="locked-code">🔒 they aren't sharing their code</span>`
-        : m.status === "done" ? `<span class="locked-code" title="Their code unlocks once you finish this mission too">🔒 finish it to see their code</span>` : ""}
+        : m.status === "done" && m.mine ? `<span class="locked-code">Not sharing their code</span>`
+        : m.status === "done" ? `<span class="locked-code" title="Their code unlocks once you finish this mission too">Finish it to see their code</span>` : ""}
     </div>`;
   return ov.courses.map(c => `
     <div class="section-title"><span>${esc(c.name)} missions: ${doneCount(c.missions)} of ${c.missions.length}</span></div>
@@ -947,9 +949,9 @@ function profileView(person, ov, isMe) {
     ? `<label class="btn small">${person.avatar ? "Change picture" : "Add a picture"}
          <input type="file" accept="image/png,image/jpeg,image/webp,image/gif" data-pic hidden></label>
        ${person.avatar ? `<button class="btn small" data-act="pic-remove">Remove picture</button>` : ""}
-       <a class="btn small" href="#/settings">⚙ Settings</a>`
+       <a class="btn small" href="#/settings">Settings</a>`
     : `<button class="btn small" data-act="remove" data-name="${name}" data-confirm="1">Remove friend</button>`;
-  const facts = [memberSince(person.joined), streak ? `🔥 ${streak}-day streak` : "", `🏆 ${earned.length} achievement${earned.length === 1 ? "" : "s"}`];
+  const facts = [memberSince(person.joined), streak ? `${streak}-day streak` : "", `${earned.length} achievement${earned.length === 1 ? "" : "s"}`];
   return `
     ${isMe ? "" : `<div class="crumbs"><a href="#/friends">Friends</a> › ${name}</div>`}
     <div class="card profile-head">
@@ -1007,7 +1009,7 @@ async function doAct(el) {
     if (act === "sync") {
       el.disabled = true;
       ME = await api("/api/sync", {});
-      toast("Synced ✓");
+      toast("Synced");
       return render(true);
     }
     if (act === "check-update") {
@@ -1094,7 +1096,7 @@ function settingsPage() {
   const toggle = (key, label, desc) => `<label class="setting"><span><b>${label}</b><small>${desc}</small></span>
     <input type="checkbox" class="switch" data-setting="${key}" ${s[key] ? "checked" : ""}></label>`;
   const row = (label, desc, control) => `<div class="setting"><span><b>${label}</b><small>${desc}</small></span>${control}</div>`;
-  const synced = sync.error ? `⚠ Last sync failed: ${esc(sync.error)}`
+  const synced = sync.error ? `Last sync failed: ${esc(sync.error)}`
     : sync.synced_at ? `Last synced at ${new Date(sync.synced_at * 1000).toLocaleTimeString()}` : "Your progress syncs after every check";
   return `
     <div class="eyebrow">Settings</div>
@@ -1168,7 +1170,7 @@ function renderSide(xpShown = S.xp) {
       <div class="ch-bar"><div style="width:${pct(done, ch.missions.length)}%"></div></div>
       <div class="items">${ch.missions.map(m => `
         <button class="item ${m.status} ${m.n === current ? "active" : ""}" data-n="${m.n}">
-          <span class="dot">${m.status === "done" ? "✓" : m.n}</span>
+          <span class="dot">${m.n}</span>
           <span class="t"><div class="name">${esc(m.title)}</div>
           <div class="meta"><span class="kind k-${m.kind}">${m.kind}</span><span>${m.xp} xp</span></div></span>
         </button>`).join("")}</div>
@@ -1189,20 +1191,20 @@ function renderMission() {
   $("#view").innerHTML = `
     <div class="crumbs"><a href="#/courses">Courses</a> › <a href="#/${S.track}">${logo(S, 14)} ${esc(S.name)}</a> › ${esc(m.chapter)}</div>
     <div class="head">
-      <div class="num">${esc(m.chapter)} · Mission ${m.chapter_n} / ${inChapter}${m.status === "done" ? ` <span class="done-tag">· ✓ complete</span>` : ""}</div>
+      <div class="num">${esc(m.chapter)} · Mission ${m.chapter_n} / ${inChapter}${m.status === "done" ? ` <span class="done-tag">· complete</span>` : ""}</div>
       <h1>${esc(m.title)}</h1>
       <div class="row"><span class="kind k-${m.kind}">${m.kind}</span><span class="xp-pill">${m.xp} XP</span>
         <span>your file <code>${esc(m.file)}</code></span></div>
     </div>
     <div class="actions">
       ${started
-        ? `<button class="btn check" id="check">▶ Check my code <kbd>Ctrl+Enter</kbd></button>
+        ? `<button class="btn check" id="check">Check my code <kbd>Ctrl+Enter</kbd></button>
            <button class="btn" id="open">Open in VS Code</button>
            <span class="hint-text">Save first (Ctrl+S)</span>`
         : `<button class="btn primary" id="start">Start mission</button>
            <span class="hint-text">Creates your file and opens it in VS Code</span>`}
       <span class="spacer"></span>
-      <button class="icon-btn" id="sound" title="Sound on/off">${soundOn ? "🔊" : "🔇"}</button>
+      <button class="btn small" id="sound">${soundOn ? "Sound on" : "Sound off"}</button>
     </div>
     <div id="results"></div>
     <article class="brief">${renderBrief(m.brief)}</article>`;
@@ -1219,7 +1221,7 @@ function failBody(t) {
   if (got && want) {
     const quoted = s => /^['"]/.test(s);
     const note = quoted(got[1]) && !quoted(want[1])
-      ? `<p class="note">💬 Your answer has quotes around it, so it's <b>text</b> (a string). The answer should be a plain value. Is there an f-string or <code>str()</code> where you meant to return the value itself?</p>`
+      ? `<p class="note">Your answer has quotes around it, so it's <b>text</b> (a string). The answer should be a plain value. Is there an f-string or <code>str()</code> where you meant to return the value itself?</p>`
       : "";
     return `<div>${esc(t.message)}</div>
       <div class="ge"><div>your code gave</div><div class="got">${esc(got[1])}</div>
@@ -1244,16 +1246,15 @@ function crashBody(t) {
 
 function renderResults(r, animate = true) {
   const tests = r.results, passing = tests.filter(t => t.status === "PASS").length;
-  const icon = { PASS: "✓", FAIL: "✗", CRASH: "!", TODO: "…" };
-  const label = { PASS: "", FAIL: "wrong answer", CRASH: "crashed", TODO: "not written yet" };
+    const label = { PASS: "", FAIL: "wrong answer", CRASH: "crashed", TODO: "not written yet" };
   const headline = r.passed ? "All tests passing!" : tests.length ? `${passing} of ${tests.length} tests passing` : "No test output";
   $("#results").innerHTML = `
     <section class="results ${r.passed ? "pass" : "fail"}">
-      <div class="r-head"><span class="big">${r.passed ? "🎉 " : ""}${headline}</span>
+      <div class="r-head"><span class="big">${headline}</span>
         <div class="pips">${tests.map(t => `<span class="pip ${animate ? "" : t.status}"></span>`).join("")}</div></div>
       ${tests.map((t, i) => `
         <div class="test ${t.status}" style="animation-delay:${animate ? i * 120 : 0}ms">
-          <span class="ic">${icon[t.status]}</span>
+          <span class="ic"></span>
           <span class="tn">${esc(human(t.name))}<small>${label[t.status]}</small></span>
           ${t.status === "FAIL" ? `<div class="body">${failBody(t)}</div>` : ""}
           ${t.status === "CRASH" ? `<div class="body">${crashBody(t)}</div>` : ""}
@@ -1303,7 +1304,7 @@ async function check() {
       const fresh = achievements(await getOverview()).filter(a => a.got && !hadBadges.has(a.title));
       setTimeout(() => celebrate(before, fresh), delay);
     }
-    else if (r.passed) setTimeout(() => { chime(true); toast("Still passing ✓"); }, delay);
+    else if (r.passed) setTimeout(() => { chime(true); toast("Still passing"); }, delay);
     else setTimeout(() => $("#check")?.classList.add("shake"), delay);
   } catch (e) {
     toast("Error: " + e.message);
@@ -1319,7 +1320,7 @@ function celebrate(before, badges) {
   confetti();
   $("#win-title").textContent = m.title;
   $("#win-rank").hidden = before.rank === S.rank;
-  $("#win-rank").textContent = `⬆ RANK UP: ${S.rank}`;
+  $("#win-rank").textContent = `Rank up: ${S.rank}`;
   $("#win-ach").innerHTML = badges.map(a => `<div>${a.icon} Achievement unlocked: ${esc(a.title)}</div>`).join("");
   const next = S.missions.find(x => x.n > current && x.status !== "done") || nextMission(S.missions);
   $("#win-next").textContent = next ? `Next: ${next.title} →` : "You finished the course!";
@@ -1417,7 +1418,7 @@ document.addEventListener("click", e => {
   if (id === "win-stay") $("#win").classList.add("hidden");
   if (id === "sound") {
     saveSetting("sound", !soundOn);
-    e.target.textContent = !soundOn ? "🔊" : "🔇";
+    e.target.textContent = !soundOn ? "Sound on" : "Sound off";
   }
   const jump = e.target.closest("[data-line]");
   if (jump) openEditor(+jump.dataset.line);

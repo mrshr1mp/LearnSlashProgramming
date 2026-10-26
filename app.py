@@ -73,13 +73,13 @@ def state(track):
     s = learn.summary(track)
     cfg = learn.track_cfg(track)
     ms = [dict(mission_info(track, m), brief=(m["dir"] / "mission.md").read_text(encoding="utf-8")) for m in s["missions"]]
-    return {**s, "missions": ms, "track": track, "icon": cfg.get("icon", ""), "logo": cfg.get("logo", ""),
+    return {**s, "missions": ms, "track": track, "logo": cfg.get("logo", ""),
             "errors": cfg.get("errors", {})}
 
 
 def course_info(track, s):
     cfg = learn.track_cfg(track)
-    return {"track": track, "name": s["name"], "icon": cfg.get("icon", ""), "logo": cfg.get("logo", ""),
+    return {"track": track, "name": s["name"], "logo": cfg.get("logo", ""),
             "description": cfg.get("description", ""), "xp": s["xp"], "rank": s["rank"], "rank_xp": s["rank_xp"],
             "next": s["next"], "missions": [mission_info(track, m) for m in s["missions"]]}
 
