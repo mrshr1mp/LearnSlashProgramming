@@ -159,3 +159,14 @@ create policy "insert own" on public.solutions for insert to authenticated with 
 create policy "update own" on public.solutions for update to authenticated
   using (user_id = (select auth.uid())) with check (user_id = (select auth.uid()));
 create policy "delete own" on public.solutions for delete to authenticated using (user_id = (select auth.uid()));
+
+-- ===== profile pictures =====
+-- a small picture stored as a data URL (the app resizes it to 128x128); only raster formats, max ~60 KB
+alter table public.profiles add column avatar text check (
+  avatar is null or (length(avatar) <= 60000 and avatar ~ '^data:image/(png|jpeg|webp);base64,[A-Za-z0-9+/]+=*$'));
+
+-- you may change your own picture, and nothing else about your profile
+revoke insert, update, delete on public.profiles from authenticated;
+grant update (avatar) on public.profiles to authenticated;
+create policy "update own avatar" on public.profiles for update to authenticated
+  using (id = (select auth.uid())) with check (id = (select auth.uid()));

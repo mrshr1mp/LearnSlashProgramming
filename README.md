@@ -14,9 +14,12 @@ python learn.py check 1    # runs the tests on your code
 ```
 
 ## Learning with friends
-Make an account (sidebar → **Sign in**), add friends by username, and once they accept you can see each other's
-progress, activity and achievements on the **Friends** page. You can also read a friend's code for any mission
-**you've already finished yourself**, side by side with yours.
+The app asks you to sign in (or **Register**) when it opens. Add friends by username, and once they accept you can
+see each other's progress, activity and achievements on the **Friends** page. You can also read a friend's code for
+any mission **you've already finished yourself**, side by side with yours. Set a profile picture on the **Account** page.
+
+Each computer's progress belongs to the first account that signs in on it, so one person's missions can't
+end up on someone else's account. Everyone uses their own copy of the app.
 
 **Setting it up on a new computer** (for a friend):
 1. Install [Python](https://www.python.org/downloads/) (tick "Add python.exe to PATH") and [VS Code](https://code.visualstudio.com/).

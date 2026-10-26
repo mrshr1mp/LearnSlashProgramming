@@ -14,6 +14,7 @@ import learn
 
 PORT = 8765
 HOSTS = {f"127.0.0.1:{PORT}", f"localhost:{PORT}"}
+OPEN = {"/api/me", "/api/signin", "/api/signup"}  # everything else needs you signed in
 UI = learn.ROOT / "ui.html"
 RESULT = re.compile(r"^  (PASS|FAIL|CRASH|TODO)\s+(\S+?)(?::\s?(.*))?$")
 FRAME = re.compile(r'File "(.+?)", line (\d+)')
@@ -98,13 +99,19 @@ def friend_overview(username):
         courses.append(info)
     history = sorted(({"track": c["track"], "id": c["mission_id"], "date": c["completed_on"]} for c in p["completions"]),
                      key=lambda h: h["date"])
-    return {"username": username, "courses": courses, "history": history,
+    return {"username": username, "avatar": p["avatar"], "courses": courses, "history": history,
             "checks": {a["day"]: a["checks"] for a in p["activity"]}}
 
 
 def me():
     s = cloud.session()
-    return {"signed_in": bool(s), "username": s and s["username"], "email": s and s["email"], "sync": cloud.status}
+    if not s:
+        return {"signed_in": False}
+    try:
+        avatar = cloud.my_avatar()
+    except cloud.CloudError:
+        avatar = None  # offline: show the letter instead
+    return {"signed_in": True, "username": s["username"], "email": s["email"], "avatar": avatar, "sync": cloud.status}
 
 
 def my_code(track, mission_id):
@@ -133,10 +140,19 @@ class Handler(BaseHTTPRequestHandler):
             return False
         return not path.startswith("/api/") or self.headers.get("X-Kit") == "1"
 
+    def signed_out(self, path):
+        """You need an account to use the app; only the sign-in endpoints work without one."""
+        if path.startswith("/api/") and path not in OPEN and not cloud.session():
+            self.send({"error": "Sign in first"}, 401)
+            return True
+        return False
+
     def do_GET(self):
         url = urlparse(self.path)
         if not self.allowed(url.path):
             return self.send({"error": "forbidden"}, 403)
+        if self.signed_out(url.path):
+            return
         q = {k: v[0] for k, v in parse_qs(url.query).items()}
         try:
             if url.path == "/":
@@ -168,8 +184,14 @@ class Handler(BaseHTTPRequestHandler):
         action = urlparse(self.path).path
         if not self.allowed(action):
             return self.send({"error": "forbidden"}, 403)
+        if self.signed_out(action):
+            return
         body = json.loads(self.rfile.read(int(self.headers.get("Content-Length") or 0)) or b"{}")
         try:
+            if action == "/api/avatar":
+                avatar = body.get("avatar")
+                cloud.set_avatar(avatar if isinstance(avatar, str) else None)
+                return self.send(me())
             if action == "/api/signup":
                 cloud.sign_up(body.get("email", ""), body.get("password", ""), body.get("username", ""))
                 cloud.sync()

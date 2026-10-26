@@ -194,6 +194,26 @@
   .mini-badges .badge { flex-direction: row; align-items: center; padding: 10px 12px; gap: 12px; }
   .mini-badges .badge .em { width: 38px; height: 38px; font-size: 20px; flex: none; }
 
+  /* sign-in screen */
+  .auth-screen { height: 100vh; overflow-y: auto; display: grid; place-items: center; padding: 30px 16px;
+                 background: radial-gradient(800px 500px at 50% -10%, #e11d4814, transparent 70%), var(--bg); }
+  .auth-box { width: min(420px, 100%); }
+  .auth-brand { display: flex; align-items: center; justify-content: center; gap: 12px; font: 700 24px var(--display); margin-bottom: 26px; }
+  .auth-brand .logo { width: 40px; height: 40px; font-size: 16px; border-radius: 10px; }
+  .auth-brand span { color: var(--red-hi); }
+  .auth-box .form { padding: 28px; }
+  .auth-box .form h3 { font-size: 24px; }
+  .auth-box .form .sub { margin: -8px 0 4px; }
+  .auth-box .form .btn { justify-content: center; padding: 11px; }
+  .switch { text-align: center; color: var(--muted); font-size: 14.5px; margin-top: 18px; }
+  .switch button { background: none; border: 0; color: var(--red-hi); font-weight: 600; cursor: pointer; padding: 0 2px; }
+  .switch button:hover { text-decoration: underline; }
+  .auth-note { text-align: center; color: var(--faint); font-size: 13px; margin-top: 22px; line-height: 1.5; }
+  .pic-edit { display: flex; align-items: center; gap: 18px; }
+  .pic-btns { display: flex; flex-direction: column; gap: 8px; align-items: flex-start; }
+  img.avatar { object-fit: cover; padding: 0; }
+  .avatar.huge { width: 96px; height: 96px; font-size: 40px; }
+
   /* accounts + friends */
   .nav .count { margin-left: auto; min-width: 20px; height: 20px; padding: 0 6px; border-radius: 10px; background: var(--red); color: #fff; font: 700 11.5px/20px var(--mono); text-align: center; }
   .me-chip { margin-top: auto; display: flex; align-items: center; gap: 12px; padding: 14px 20px; border-top: 1px solid var(--line); }
@@ -360,7 +380,8 @@
 </style>
 </head>
 <body>
-<div class="app">
+<div class="auth-screen" id="auth" hidden></div>
+<div class="app" id="app">
   <aside class="side">
     <div class="brand"><div class="logo">&gt;_</div>learn<span>/</span>programming</div>
     <nav class="nav">
@@ -504,9 +525,7 @@ function parseRoute() {
 }
 
 function renderMe() {
-  $("#me-chip").innerHTML = ME.signed_in
-    ? `<span class="avatar">${esc(ME.username[0].toUpperCase())}</span><span><b>${esc(ME.username)}</b><small>${ME.sync.error ? "⚠ not synced" : "Account"}</small></span>`
-    : `<span class="avatar ghost">?</span><span><b>Sign in</b><small>to add friends</small></span>`;
+  $("#me-chip").innerHTML = `${avatar(ME.username, ME.avatar)}<span><b>${esc(ME.username)}</b><small>${ME.sync.error ? "⚠ not synced" : "Account"}</small></span>`;
   $("#me-chip").classList.toggle("active", route.page === "account");
 }
 
@@ -516,8 +535,14 @@ async function render(keepScroll = false) {
   document.querySelectorAll(".nav a").forEach(a => a.classList.toggle("active", a.dataset.page === navPage));
   try {
     ME = await api("/api/me");
+    $("#auth").hidden = ME.signed_in;  // no account, no app: only the sign-in screen
+    $("#app").hidden = !ME.signed_in;
+    if (!ME.signed_in) {
+      $("#auth").innerHTML = authScreen();
+      return;
+    }
     renderMe();
-    if (ME.signed_in) api("/api/friends").then(f => {  // badge for waiting friend requests
+    api("/api/friends").then(f => {  // badge for waiting friend requests
       $("#req-count").hidden = !f.incoming.length;
       $("#req-count").textContent = f.incoming.length;
     }).catch(() => {});
@@ -700,7 +725,57 @@ function achievementsPage() {
 }
 
 /* ---------- account ---------- */
-const avatar = (name, cls = "") => `<span class="avatar ${cls}">${esc(name[0].toUpperCase())}</span>`;
+// a profile picture, or the first letter of the username if there isn't one
+const avatar = (name, src, cls = "") => src
+  ? `<img class="avatar ${cls}" src="${esc(src)}" alt="">`
+  : `<span class="avatar ${cls}">${esc(name[0].toUpperCase())}</span>`;
+
+let authMode = "signin";
+function authScreen() {
+  const form = authMode === "signin"
+    ? `<form class="card form" data-form="signin"><h3>Welcome back</h3><p class="sub">Sign in to keep learning.</p>
+        <label>Email<input name="email" type="email" required autocomplete="email" autofocus></label>
+        <label>Password<input name="password" type="password" required autocomplete="current-password"></label>
+        <button class="btn primary">Sign in</button></form>
+      <div class="switch">Don't have an account? <button data-act="auth-switch">Register</button></div>`
+    : `<form class="card form" data-form="signup"><h3>Create your account</h3><p class="sub">Free, and it takes 20 seconds.</p>
+        <label>Username <small>(friends find you by this)</small><input name="username" required pattern="[A-Za-z0-9_]{3,20}" title="3-20 letters, numbers or _" autocomplete="username" autofocus></label>
+        <label>Email<input name="email" type="email" required autocomplete="email"></label>
+        <label>Password <small>(8+ characters)</small><input name="password" type="password" required minlength="8" autocomplete="new-password"></label>
+        <button class="btn primary">Create account</button></form>
+      <div class="switch">Already have an account? <button data-act="auth-switch">Sign in</button></div>`;
+  return `<div class="auth-box">
+    <div class="auth-brand"><div class="logo">&gt;_</div>learn<span>/</span>programming</div>
+    ${form}
+    <p class="auth-note">🔒 Your code stays on this computer. Only friends you accept can see your progress,
+      and they can only read your code for missions they've finished themselves.</p>
+  </div>`;
+}
+
+// shrink a chosen image to a 128x128 square so it's small enough to store with your profile
+async function pictureFrom(file) {
+  const img = await createImageBitmap(file);
+  const side = Math.min(img.width, img.height), c = document.createElement("canvas");
+  c.width = c.height = 128;
+  const ctx = c.getContext("2d");
+  ctx.fillStyle = "#1a1316";  // behind transparent PNGs, since JPEG has no transparency
+  ctx.fillRect(0, 0, 128, 128);
+  ctx.drawImage(img, (img.width - side) / 2, (img.height - side) / 2, side, side, 0, 0, 128, 128);
+  let quality = 0.85, url = c.toDataURL("image/jpeg", quality);
+  while (url.length > 60000 && quality > 0.3) url = c.toDataURL("image/jpeg", quality -= 0.15);
+  return url;
+}
+
+document.addEventListener("change", async e => {
+  if (!e.target.matches("[data-pic]") || !e.target.files[0]) return;
+  try {
+    ME = await api("/api/avatar", { avatar: await pictureFrom(e.target.files[0]) });
+    toast("Profile picture updated");
+    render(true);
+  } catch (err) {
+    toast(err.message.includes("decode") || err.name === "InvalidStateError" ? "That file isn't an image we can read" : err.message);
+  }
+});
 
 function privacyNote() {
   return `<div class="card note-card"><h3>🔒 What gets shared</h3><ul>
@@ -711,49 +786,32 @@ function privacyNote() {
 }
 
 async function accountPage() {
-  if (ME.signed_in) {
-    const s = ME.sync;
-    const synced = s.error ? `⚠ Last sync failed: ${esc(s.error)}`
-      : s.synced_at ? `✓ Progress synced at ${new Date(s.synced_at * 1000).toLocaleTimeString()}` : "Your progress syncs after every check.";
-    return `
-      <div class="eyebrow">Account</div>
-      <h1 class="page-title">Your account</h1>
-      <div class="card account-card">
-        <div class="who">${avatar(ME.username, "big")}<div><h3>${esc(ME.username)}</h3><div class="sub">${esc(ME.email)}</div></div></div>
-        <p class="sub">${synced}</p>
-        <div class="row-btns"><a class="btn primary" href="#/friends">Friends →</a><button class="btn" data-act="signout">Sign out</button></div>
-      </div>
-      ${privacyNote()}`;
-  }
+  const s = ME.sync;
+  const synced = s.error ? `⚠ Last sync failed: ${esc(s.error)}`
+    : s.synced_at ? `✓ Progress synced at ${new Date(s.synced_at * 1000).toLocaleTimeString()}` : "Your progress syncs after every check.";
   return `
     <div class="eyebrow">Account</div>
-    <h1 class="page-title">Sign in</h1>
-    <p class="lede">An account lets you add friends and see each other's progress. Everything else works without one.</p>
-    <div class="two">
-      <form class="card form" data-form="signin"><h3>Sign in</h3>
-        <label>Email<input name="email" type="email" required autocomplete="email"></label>
-        <label>Password<input name="password" type="password" required autocomplete="current-password"></label>
-        <button class="btn primary">Sign in</button></form>
-      <form class="card form" data-form="signup"><h3>Create account</h3>
-        <label>Username <small>(friends find you by this)</small><input name="username" required pattern="[A-Za-z0-9_]{3,20}" title="3-20 letters, numbers or _" autocomplete="username"></label>
-        <label>Email<input name="email" type="email" required autocomplete="email"></label>
-        <label>Password <small>(8+ characters)</small><input name="password" type="password" required minlength="8" autocomplete="new-password"></label>
-        <button class="btn primary">Create account</button></form>
+    <h1 class="page-title">Your account</h1>
+    <div class="card account-card">
+      <div class="pic-edit">${avatar(ME.username, ME.avatar, "huge")}
+        <div><h3 style="margin:0;font:700 22px var(--display)">${esc(ME.username)}</h3><div class="sub">${esc(ME.email)}</div>
+          <div class="pic-btns" style="margin-top:10px">
+            <label class="btn small">${ME.avatar ? "Change picture" : "Add a profile picture"}
+              <input type="file" accept="image/png,image/jpeg,image/webp,image/gif" data-pic hidden></label>
+            ${ME.avatar ? `<button class="linkbtn" data-act="pic-remove">Remove picture</button>` : ""}
+          </div></div></div>
+      <p class="sub">${synced}</p>
+      <div class="row-btns"><a class="btn primary" href="#/friends">Friends →</a><button class="btn" data-act="signout">Sign out</button></div>
     </div>
     ${privacyNote()}`;
 }
 
 /* ---------- friends ---------- */
 async function friendsPage() {
-  if (!ME.signed_in) {
-    return `<div class="eyebrow">Friends</div><h1 class="page-title">Friends</h1>
-      <p class="lede">Sign in to add friends and compare progress.</p>
-      <a class="btn primary" href="#/account">Sign in or create an account →</a>`;
-  }
   const [f, ov] = await Promise.all([api("/api/friends"), getOverview()]);
-  const board = [...f.friends, { username: ME.username, xp: ov.courses.reduce((s, c) => s + c.xp, 0), you: true }]
+  const board = [...f.friends, { username: ME.username, avatar: ME.avatar, xp: ov.courses.reduce((s, c) => s + c.xp, 0), you: true }]
     .sort((a, b) => b.xp - a.xp);
-  const person = (n, extra) => `<div class="person">${avatar(n)}<b>${esc(n)}</b><span class="spacer"></span>${extra}</div>`;
+  const person = (p, extra) => `<div class="person">${avatar(p.username, p.avatar)}<b>${esc(p.username)}</b><span class="spacer"></span>${extra}</div>`;
   return `
     <div class="eyebrow">Friends</div>
     <h1 class="page-title">Friends</h1>
@@ -761,17 +819,17 @@ async function friendsPage() {
     <form class="card add-friend" data-form="add">
       <input name="username" placeholder="Friend's username" required pattern="[A-Za-z0-9_]{3,20}" autocomplete="off">
       <button class="btn primary">Send request</button></form>
-    ${f.incoming.length ? `<div class="section-title">Requests for you</div><div class="card">${f.incoming.map(n => person(n,
-      `<button class="btn primary" data-act="accept" data-name="${esc(n)}">Accept</button>
-       <button class="btn" data-act="remove" data-name="${esc(n)}">Decline</button>`)).join("")}</div>` : ""}
+    ${f.incoming.length ? `<div class="section-title">Requests for you</div><div class="card">${f.incoming.map(p => person(p,
+      `<button class="btn primary" data-act="accept" data-name="${esc(p.username)}">Accept</button>
+       <button class="btn" data-act="remove" data-name="${esc(p.username)}">Decline</button>`)).join("")}</div>` : ""}
     <div class="section-title">Leaderboard</div>
     <div class="card">${board.map((p, i) => `
-      <div class="person ${p.you ? "you" : ""}"><span class="place">${["🥇", "🥈", "🥉"][i] || "#" + (i + 1)}</span>${avatar(p.username)}
+      <div class="person ${p.you ? "you" : ""}"><span class="place">${["🥇", "🥈", "🥉"][i] || "#" + (i + 1)}</span>${avatar(p.username, p.avatar)}
         <b>${esc(p.username)}${p.you ? " (you)" : ""}</b><span class="spacer"></span><span class="xpv">${p.xp} XP</span>
         ${p.you ? `<a class="btn" href="#/dashboard">Dashboard</a>` : `<a class="btn" href="#/u/${encodeURIComponent(p.username)}">View profile →</a>`}</div>`).join("")}
       ${f.friends.length ? "" : `<div class="empty">No friends yet. Send a request above!</div>`}</div>
-    ${f.outgoing.length ? `<div class="section-title">Waiting for them to accept</div><div class="card">${f.outgoing.map(n => person(n,
-      `<button class="btn" data-act="remove" data-name="${esc(n)}">Cancel</button>`)).join("")}</div>` : ""}`;
+    ${f.outgoing.length ? `<div class="section-title">Waiting for them to accept</div><div class="card">${f.outgoing.map(p => person(p,
+      `<button class="btn" data-act="remove" data-name="${esc(p.username)}">Cancel</button>`)).join("")}</div>` : ""}`;
 }
 
 async function userPage() {
@@ -785,7 +843,7 @@ async function userPage() {
     </div>`;
   return `
     <div class="crumbs"><a href="#/friends">Friends</a> › ${name}</div>
-    <div class="who">${avatar(ov.username, "big")}
+    <div class="who">${avatar(ov.username, ov.avatar, "big")}
       <div><h1 class="page-title" style="margin:0">${name}</h1>
       <div class="sub">${ov.courses.map(c => `${esc(c.name)} · ${esc(c.rank)}`).join("  ·  ")}</div></div></div>
     <div style="margin-top:24px">${statTiles(ov)}</div>
@@ -813,10 +871,20 @@ async function showCode(track, mission, title) {
 async function doAct(el) {
   const { act, name } = el.dataset;
   try {
+    if (act === "auth-switch") {
+      authMode = authMode === "signin" ? "signup" : "signin";
+      $("#auth").innerHTML = authScreen();
+      return;
+    }
     if (act === "signout") {
       await api("/api/signout", {});
-      toast("Signed out");
+      authMode = "signin";
       return render();
+    }
+    if (act === "pic-remove") {
+      ME = await api("/api/avatar", { avatar: null });
+      toast("Picture removed");
+      return render(true);
     }
     if (act === "code") return await showCode(el.dataset.track, el.dataset.mission, el.dataset.title);
     if (act === "remove" && el.dataset.confirm && !confirm(`Remove ${name} from your friends?`)) return;
@@ -842,8 +910,9 @@ document.addEventListener("submit", async e => {
       return render(true);
     }
     await api(`/api/${form.dataset.form}`, data);
-    toast(form.dataset.form === "signup" ? "Account created. Welcome!" : "Signed in");
-    go("#/friends");
+    toast(form.dataset.form === "signup" ? "Account created. Welcome!" : "Welcome back!");
+    authMode = "signin";
+    go("#/dashboard");
   } catch (err) {
     toast(err.message);
     btn.disabled = false;
@@ -1128,7 +1197,7 @@ document.addEventListener("keydown", e => {
 window.addEventListener("hashchange", () => render());
 // coming back from VS Code: refresh in case files changed
 window.addEventListener("focus", async () => {
-  if (busy) return;
+  if (busy || !ME.signed_in) return;  // don't wipe a half-typed sign-in form
   if (route.page === "course" && S) {
     S = await api(`/api/state?track=${encodeURIComponent(S.track)}`);
     renderSide();

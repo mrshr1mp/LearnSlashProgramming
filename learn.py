@@ -32,6 +32,11 @@ def load_progress():
     return json.loads(PROGRESS.read_text()) if PROGRESS.exists() else {}
 
 
+def save_progress(progress):
+    PROGRESS.parent.mkdir(parents=True, exist_ok=True)
+    PROGRESS.write_text(json.dumps(progress, indent=2))
+
+
 def summary(track, done=None):
     """XP, rank and mission statuses. `done` defaults to your own finished missions (pass a friend's instead)."""
     cfg = track_cfg(track)
@@ -98,7 +103,7 @@ def log_check():
     checks = progress.setdefault("_checks", {})
     today = date.today().isoformat()
     checks[today] = checks.get(today, 0) + 1
-    PROGRESS.write_text(json.dumps(progress, indent=2))
+    save_progress(progress)
 
 
 def award(track, m):
@@ -109,7 +114,7 @@ def award(track, m):
         return False
     done.append(m["id"])
     progress.setdefault("_history", []).append({"track": track, "id": m["id"], "date": date.today().isoformat()})
-    PROGRESS.write_text(json.dumps(progress, indent=2))
+    save_progress(progress)
     return True
 
 

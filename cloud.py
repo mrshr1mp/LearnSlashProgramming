@@ -77,20 +77,40 @@ def session():
     return s
 
 
+def _check_owner(user_id=None):
+    """This computer's progress belongs to the first account that signed in here, so it can't
+    end up synced to someone else's account."""
+    owner = learn.load_progress().get("_owner")
+    if owner and owner["id"] != user_id:
+        raise CloudError(f"This computer's progress belongs to {owner['username']}. "
+                         "Each person needs their own copy of the app (see README).")
+
+
+def _claim(s):
+    progress = learn.load_progress()
+    if "_owner" not in progress:
+        progress["_owner"] = {"id": s["user_id"], "username": s["username"]}
+        learn.save_progress(progress)
+    return s
+
+
 def sign_up(email, password, username):
     if not USERNAME.match(username or ""):
         raise CloudError("Usernames are 3-20 letters, numbers or _")
+    _check_owner()  # before creating an account that couldn't use this computer anyway
     if not _request("POST", "/rest/v1/rpc/username_available", {"name": username}):
         raise CloudError(f"The username {username} is taken")
     auth = _request("POST", "/auth/v1/signup", {"email": email, "password": password, "data": {"username": username}})
     if not auth or "access_token" not in auth:
         raise CloudError("Account created, but the server wants an email confirmation first. "
                          "Turn off 'Confirm email' in Supabase (see README), then sign in.")
-    return _save_session(auth)
+    return _claim(_save_session(auth))
 
 
 def sign_in(email, password):
-    return _save_session(_request("POST", "/auth/v1/token?grant_type=password", {"email": email, "password": password}))
+    auth = _request("POST", "/auth/v1/token?grant_type=password", {"email": email, "password": password})
+    _check_owner(auth["user"]["id"])  # refuse before saving the session
+    return _claim(_save_session(auth))
 
 
 def sign_out():
@@ -108,6 +128,27 @@ def _rest(method, path, body=None, prefer=None):
     if not s:
         raise CloudError("You're signed out")
     return _request(method, "/rest/v1/" + path, body, s["access_token"], prefer)
+
+
+# ---------- profile picture ----------
+AVATAR = re.compile(r"^data:image/(png|jpeg|webp);base64,[A-Za-z0-9+/]+=*$")  # same rule as the database
+_avatars = {}  # user id -> data URL, so the sidebar doesn't hit the network on every page
+
+
+def my_avatar():
+    uid = session()["user_id"]
+    if uid not in _avatars:
+        rows = _rest("GET", f"profiles?select=avatar&id=eq.{uid}")
+        _avatars[uid] = rows[0]["avatar"] if rows else None
+    return _avatars[uid]
+
+
+def set_avatar(data_url):
+    if data_url is not None and (len(data_url) > 60_000 or not AVATAR.match(data_url)):
+        raise CloudError("That picture couldn't be used. Try a PNG or JPG.")
+    uid = session()["user_id"]
+    _rest("PATCH", f"profiles?id=eq.{uid}", {"avatar": data_url}, "return=minimal")
+    _avatars[uid] = data_url
 
 
 # ---------- syncing your progress ----------
@@ -155,16 +196,17 @@ def friends():
     me = session()["user_id"]
     rows = _rest("GET", "friendships?select=requester,addressee,status")
     others = {r["requester"] if r["addressee"] == me else r["addressee"] for r in rows}
-    names = {p["id"]: p["username"] for p in _rest("GET", f"profiles?select=id,username&id=in.{_ids_in(others)}")} if others else {}
+    people = {p["id"]: p for p in _rest("GET", f"profiles?select=id,username,avatar&id=in.{_ids_in(others)}")} if others else {}
     accepted = [r["requester"] if r["addressee"] == me else r["addressee"] for r in rows if r["status"] == "accepted"]
     xp = {}
     if accepted:
         for c in _rest("GET", f"completions?select=user_id,xp&user_id=in.{_ids_in(accepted)}"):
             xp[c["user_id"]] = xp.get(c["user_id"], 0) + c["xp"]
+    person = lambda i: {"username": people[i]["username"], "avatar": people[i]["avatar"]}
     return {
-        "friends": [{"username": names[i], "xp": xp.get(i, 0)} for i in accepted if i in names],
-        "incoming": [names[r["requester"]] for r in rows if r["status"] == "pending" and r["addressee"] == me and r["requester"] in names],
-        "outgoing": [names[r["addressee"]] for r in rows if r["status"] == "pending" and r["requester"] == me and r["addressee"] in names],
+        "friends": [{**person(i), "xp": xp.get(i, 0)} for i in accepted if i in people],
+        "incoming": [person(r["requester"]) for r in rows if r["status"] == "pending" and r["addressee"] == me and r["requester"] in people],
+        "outgoing": [person(r["addressee"]) for r in rows if r["status"] == "pending" and r["requester"] == me and r["addressee"] in people],
     }
 
 
@@ -176,11 +218,15 @@ def accept_friend(username):
     _rest("POST", "rpc/accept_friend", {"requester_name": username})
 
 
-def _user_id(username):
-    rows = _rest("GET", f"profiles?select=id&username=eq.{quote(username)}")
+def _person(username):
+    rows = _rest("GET", f"profiles?select=id,avatar&username=eq.{quote(username)}")
     if not rows:
         raise CloudError(f"{username} isn't your friend")
-    return rows[0]["id"]
+    return rows[0]
+
+
+def _user_id(username):
+    return _person(username)["id"]
 
 
 def remove_friend(username):
@@ -190,8 +236,10 @@ def remove_friend(username):
 
 def profile(username):
     """A friend's finished missions and activity. The database only answers for accepted friends."""
-    uid = _user_id(username)
+    p = _person(username)
+    uid = p["id"]
     return {
+        "avatar": p["avatar"],
         "completions": _rest("GET", f"completions?select=track,mission_id,completed_on&user_id=eq.{uid}"),
         "activity": _rest("GET", f"activity?select=day,checks&user_id=eq.{uid}"),
         # only lists missions whose code you're allowed to see (ones you've finished too)
