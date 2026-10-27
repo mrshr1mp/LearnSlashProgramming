@@ -20,6 +20,9 @@ Type `exit()` to leave.
 **2. A file** (for real programs). Write code in a `.py` file and run it with the ▶ button in the top right of VS Code,
 or type `python hello.py` in the terminal.
 
+> **On Linux or a Mac?** The command is `python3` instead of `python`. Whenever a mission says `python ...`,
+> type `python3 ...` (for example `python3 hello.py` or `python3 -m kit`).
+
 ## Lesson: variables and strings
 A **variable** is a name that holds a value. A **string** is text inside quotes.
 ```python

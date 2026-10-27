@@ -423,20 +423,27 @@ class Handler(BaseHTTPRequestHandler):
 
 
 class Server(ThreadingHTTPServer):
-    allow_reuse_address = False  # on Windows, True would let two copies share the port
+    # On Windows, reuse would let two copies share the port. On Linux/macOS it only lets a restarted copy
+    # take the port straight back instead of waiting about a minute for the old connections to clear.
+    allow_reuse_address = os.name != "nt"
 
 
 def open_window(url):
-    """Open as a standalone app window (Edge/Chrome --app mode), falling back to a normal tab."""
-    candidates = [shutil.which("msedge"), shutil.which("chrome"),
-                  r"C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe",
-                  r"C:\Program Files\Microsoft\Edge\Application\msedge.exe",
-                  r"C:\Program Files\Google\Chrome\Application\chrome.exe"]
+    """Open as a standalone app window (Edge/Chrome/Chromium --app mode), falling back to a normal tab."""
+    names = ["msedge", "chrome", "microsoft-edge", "microsoft-edge-stable", "google-chrome", "google-chrome-stable",
+             "chromium", "chromium-browser", "brave-browser"]
+    candidates = [shutil.which(n) for n in names] + [
+        r"C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe",
+        r"C:\Program Files\Microsoft\Edge\Application\msedge.exe",
+        r"C:\Program Files\Google\Chrome\Application\chrome.exe",
+        "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+        "/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge"]
     for exe in candidates:
         if exe and Path(exe).exists():
-            subprocess.Popen([exe, f"--app={url}", "--window-size=1280,900"])
+            subprocess.Popen([exe, f"--app={url}", "--window-size=1280,900"],
+                             stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)  # browsers chatter on Linux
             return
-    webbrowser.open(url)
+    webbrowser.open(url)  # Firefox and others: a normal tab works too
 
 
 def replace_running_copy():

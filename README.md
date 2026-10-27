@@ -2,7 +2,7 @@
 
 Learn a language by building real tools, not by answering quizzes.
 
-**Double-click `Start Learning.bat`** (or run `python app.py`). The app opens in its own window:
+**Double-click `Start Learning.bat`** (or run `python app.py`; on Linux/macOS run `./start.sh`). The app opens in its own window:
 read the mission, hit **Start mission** (opens your file in VS Code), write code, save, then hit
 **Check my code** or press **Ctrl+Enter**. No console window: the app closes itself a few minutes after you close its window. If something goes wrong, `workspace/app.log` has the details.
 
@@ -25,6 +25,13 @@ end up on someone else's account. Everyone uses their own copy of the app.
 1. Install [Python](https://www.python.org/downloads/) (tick "Add python.exe to PATH") and [VS Code](https://code.visualstudio.com/).
 2. Get the code: `git clone <repo link>`, then open the folder.
 3. Double-click `Start Learning.bat` and **Register**.
+
+**On Linux** (commands for Ubuntu/Debian; other distros use their own package manager):
+1. `sudo apt install python3 git`, plus [VS Code](https://code.visualstudio.com/) (its `code` command lets the app open your files).
+   For the app's own window, have Chrome, Chromium, Edge or Brave installed; with only Firefox it opens as a normal tab.
+2. `git clone <repo link>`, then `cd` into the folder.
+3. Run `./start.sh` and **Register**. You can close the terminal after that.
+4. Everywhere the lessons say `python`, type `python3`.
 
 **One-click updates.** The app opens right away and checks GitHub in the background. If there's a new version, an
 **Update available** banner appears within a few seconds (and it keeps checking every 10 minutes while open).
@@ -100,7 +107,8 @@ The help gets smaller as you go:
 
 ## Folders
 ```
-Start Learning.bat       double-click to launch the app
+Start Learning.bat       double-click to launch the app (Windows)
+start.sh                 ./start.sh to launch the app (Linux/macOS)
 app.py                   the app's local server (only reachable from your own PC)
 cloud.py, cloud.json     accounts, syncing and friends (Supabase)
 supabase/schema.sql      the database tables and privacy rules

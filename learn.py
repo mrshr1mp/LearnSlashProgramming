@@ -14,6 +14,7 @@ SOURCE = ROOT / "tracks"           # course sources, published to the marketplac
 WORK = ROOT / "workspace"
 TRACKS = WORK / "courses"          # the courses you've added from the marketplace
 PROGRESS = WORK / "progress.json"
+PY = "python" if os.name == "nt" else "python3"  # what to type in a terminal
 COURSE_ID = re.compile(r"^[a-z0-9_-]{1,40}$")
 SAFE_PATH = re.compile(r"^[A-Za-z0-9_.-]+(/[A-Za-z0-9_.-]+)*$")
 
@@ -257,8 +258,8 @@ def status(track):
             chapter = m["chapter"]
             print(f"\n  -- {chapter} --")
         print(f"  {marks[m['status']]} {m['n']:>2}. {m['title']:<26} {m['kind']:<7} {m['xp']:>4} xp")
-    print("\n  python learn.py start N    open mission N")
-    print("  python learn.py check N    run the tests on your code\n")
+    print(f"\n  {PY} learn.py start N    open mission N")
+    print(f"  {PY} learn.py check N    run the tests on your code\n")
 
 
 def main():
@@ -283,7 +284,7 @@ def main():
             open_in_editor(target)
         return
     if not (WORK / args.track / m["file"]).exists():
-        sys.exit(f"  Start the mission first: python learn.py start {m['n']}")
+        sys.exit(f"  Start the mission first: {PY} learn.py start {m['n']}")
     print(f"\n  Checking {m['title']}...\n")
     log_check()
     passed, output = run_tests(args.track, m)
