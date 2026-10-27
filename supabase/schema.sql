@@ -279,3 +279,11 @@ create policy "insert own" on public.game_stats for insert to authenticated with
 create policy "update own" on public.game_stats for update to authenticated
   using (user_id = (select auth.uid())) with check (user_id = (select auth.uid()));
 create policy "delete own" on public.game_stats for delete to authenticated using (user_id = (select auth.uid()));
+
+-- ===== party games =====
+-- Friends play live in Realtime rooms named game:<CODE>. Only signed-in players can join, send or see who's there,
+-- and only in game rooms. Nothing is stored: Realtime just checks these rules when someone joins.
+create policy "players can join game rooms" on realtime.messages for select to authenticated
+  using ((select realtime.topic()) like 'game:%' and realtime.messages.extension in ('broadcast', 'presence'));
+create policy "players can send in game rooms" on realtime.messages for insert to authenticated
+  with check ((select realtime.topic()) like 'game:%' and realtime.messages.extension in ('broadcast', 'presence'));

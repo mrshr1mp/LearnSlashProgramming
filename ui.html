@@ -391,6 +391,48 @@
   .inv-review ul { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 6px; }
   .inv-review li { display: flex; flex-direction: column; gap: 2px; padding: 8px 12px; background: var(--surface-2); border-radius: 8px; }
   .inv-review li span { color: var(--muted); font-size: 13.5px; }
+  /* party games */
+  .party-cta { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+  .pc-text { flex: 1; min-width: 240px; display: flex; flex-direction: column; gap: 4px; }
+  .pc-text b { display: flex; align-items: center; gap: 8px; font-size: 16px; }
+  .party-join { display: flex; gap: 8px; }
+  .party-join input { width: 130px; text-transform: uppercase; font-family: var(--mono); letter-spacing: 2px; }
+  .party-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; margin-bottom: 18px; flex-wrap: wrap; }
+  .party-head .page-title { margin: 0; }
+  .party-code { font-family: var(--mono); letter-spacing: 4px; color: var(--gold-hi); padding: 2px 12px; border-radius: 10px;
+                background: color-mix(in srgb, var(--gold) 12%, transparent); }
+  .party-layout { display: grid; grid-template-columns: minmax(0, 1fr) 260px; gap: 18px; align-items: start; }
+  @media (max-width: 1000px) { .party-layout { grid-template-columns: 1fr; } }
+  .party-side { position: sticky; top: 12px; padding: 16px; }
+  .pl-row { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--line); }
+  .pl-row:last-child { border-bottom: 0; }
+  .pl-row.you b { color: var(--accent-hi); }
+  .pl-row .avatar { width: 30px; height: 30px; font-size: 13px; }
+  .pl-stat { display: flex; align-items: center; gap: 5px; font: 13px var(--mono); color: var(--muted); }
+  .pl-stat svg { width: 15px; height: 15px; }
+  .mini-bar { width: 80px; height: 7px; border-radius: 9px; background: var(--line); overflow: hidden; display: block; }
+  .mini-bar span { display: block; height: 100%; background: var(--accent-hi); transition: width .25s; }
+  .pg-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; }
+  .pg-card { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; padding: 16px; border-radius: 14px; text-align: left;
+             background: var(--surface); border: 1.5px solid var(--line); color: var(--text); font: inherit; cursor: pointer; }
+  .pg-card:disabled { cursor: default; }
+  .pg-card span:last-child { color: var(--muted); font-size: 13.5px; }
+  .pg-card b { font: 700 17px var(--display); }
+  .pg-card.on { border-color: var(--accent-hi); background: color-mix(in srgb, var(--accent) 10%, var(--surface)); }
+  .pg-level { display: flex; align-items: center; gap: 10px; margin-top: 14px; font-weight: 600; }
+  .pg-level select { padding: 8px 10px; border-radius: 9px; background: var(--surface-2); color: var(--text); border: 1px solid var(--line); font: inherit; }
+  .pg-start { display: flex; align-items: center; gap: 14px; margin-top: 18px; flex-wrap: wrap; }
+  .pg-start .sub { display: flex; align-items: center; gap: 6px; }
+  .btn.big { padding: 12px 26px; font-size: 16px; }
+  .hud-time { display: flex; align-items: center; gap: 6px; color: var(--gold-hi); }
+  .party-results { text-align: center; padding: 28px; display: flex; flex-direction: column; align-items: center; gap: 14px; }
+  .podium { width: min(520px, 100%); display: flex; flex-direction: column; gap: 8px; }
+  .pod-row { display: flex; align-items: center; gap: 12px; padding: 10px 14px; border-radius: 12px; background: var(--surface-2); border: 1px solid var(--line); }
+  .pod-row.you { border-color: var(--accent-hi); }
+  .pod-row .place { width: 46px; display: flex; align-items: center; gap: 4px; font: 700 18px var(--mono); color: var(--faint); }
+  .pod-row.p1 .place { color: var(--gold-hi); } .pod-row.p2 .place { color: #c9d1db; } .pod-row.p3 .place { color: #e0a36b; }
+  .pod-row.p1 { background: color-mix(in srgb, var(--gold) 10%, var(--surface-2)); }
+  .pod-stat { font: 600 14px var(--mono); }
   /* code racer */
   .race-card { padding: 22px; }
   .track { display: flex; flex-direction: column; gap: 6px; padding: 14px; border-radius: 12px; background: #0c0c10; border: 1px solid var(--line); }
@@ -838,6 +880,7 @@ function parseRoute() {
   const parts = location.hash.replace(/^#\/?/, "").split("/").filter(Boolean);
   if (!parts.length || parts[0] === "dashboard") return { page: "dashboard" };
   if (parts[0] === "friends") return { page: "friends", tab: parts[1] || "list" };
+  if (parts[0] === "party") return { page: "party", code: parts[1] };
   if (parts[0] === "games") return { page: "games", track: decodeURIComponent(parts[1] || ""), mode: parts[2], hole: parts[3] };
   if (["courses", "achievements", "settings", "profile", "market"].includes(parts[0])) return { page: parts[0] };
   if (parts[0] === "account") return { page: "profile" };  // old links
@@ -892,7 +935,8 @@ setInterval(async () => {
 async function render(keepScroll = false) {
   route = parseRoute();
   stopGame();
-  const navPage = { course: "courses", user: "friends" }[route.page] || route.page;
+  if (route.page !== "party") partyLeave();
+  const navPage = { course: "courses", user: "friends", party: "games" }[route.page] || route.page;
   document.querySelectorAll(".nav a").forEach(a => a.classList.toggle("active", a.dataset.page === navPage));
   try {
     ME = await api("/api/me");
@@ -908,10 +952,10 @@ async function render(keepScroll = false) {
       $("#req-count").hidden = !f.incoming.length;
       $("#req-count").textContent = f.incoming.length;
     }).catch(() => {});
-    if (["friends", "profile", "user", "settings", "market", "games"].includes(route.page)) {
+    if (["friends", "profile", "user", "settings", "market", "games", "party"].includes(route.page)) {
       $("#course-side").hidden = true;
       $("#view").innerHTML = `<div class="eyebrow">Loading…</div>`;
-      $("#view").innerHTML = await { friends: friendsPage, profile: profilePage, user: userPage, settings: settingsPage, market: marketPage, games: gamesPage }[route.page]();
+      $("#view").innerHTML = await { friends: friendsPage, profile: profilePage, user: userPage, settings: settingsPage, market: marketPage, games: gamesPage, party: partyPage }[route.page]();
     } else if (route.page === "course") {
       if (S?.track !== route.track) lastCheck = null;
       S = await api(`/api/state?track=${encodeURIComponent(route.track)}`);
@@ -1300,7 +1344,7 @@ function stopGame() {
   G = null;
 }
 const sleep = ms => new Promise(r => setTimeout(r, ms));
-const shuffle = a => a.map(x => [Math.random(), x]).sort((p, q) => p[0] - q[0]).map(p => p[1]);
+const shuffle = (a, rand = Math.random) => a.map(x => [rand(), x]).sort((p, q) => p[0] - q[0]).map(p => p[1]);
 const taskHtml = md => window.marked ? marked.parse(md) : `<p>${esc(md)}</p>`;
 const starRow = n => [1, 2, 3].map(i => ic("star", i <= n ? "star on" : "star")).join("");
 const topFriend = (D, key) => D.friends.filter(f => f.best[key]).sort((a, b) => b.best[key] - a.best[key])[0];
@@ -1350,7 +1394,13 @@ function gamesHome(D, ov) {
       ${D.racer.length ? card("racer", `<div class="mini-lane"><span class="car you">${CAR}</span></div><div class="mini-lane"><span class="car ghost">${CAR}</span></div>`,
         best.racer ? `${ic("trophy")} Best ${best.racer} WPM` : "Not played yet", friend("racer", " WPM")) : ""}
     </div>
-    ${any ? "" : `<div class="card empty">This course doesn't have any games yet.</div>`}`;
+    ${any ? `<div class="section-title">Play with friends</div>
+      <div class="card party-cta">
+        <div class="pc-text"><b>${ic("users")} Party games</b><span class="sub">Code Race, Bug Blitz and Robot Race, live against your friends. Create a game and send them the code.</span></div>
+        <button class="btn primary" data-act="party-create">${ic("plus")} Create a game</button>
+        <form class="party-join" data-form="party-join"><input name="code" placeholder="Game code" maxlength="6" required pattern="[A-Za-z2-9]{6}" autocomplete="off" title="6 letters and numbers">
+          <button class="btn">${ic("log-in")} Join</button></form>
+      </div>` : `<div class="card empty">This course doesn't have any games yet.</div>`}`;
 }
 
 /* ----- Robot Maze ----- */
@@ -1386,17 +1436,17 @@ function robotLevels(D) {
           <span class="lv-stars">Beat level ${i} first</span></div>`).join("")}</div>`;
 }
 
-function robotLevel(D, id) {
+function robotLevel(D, id, party = false) {
   const i = D.robot.findIndex(l => l.id === id), L = D.robot[i];
-  if (!L || (i > 0 && !D.stats.best[`robot/${D.robot[i - 1].id}`])) return robotLevels(D);
-  G = { D, game: "robot", L, i, speed: +store.get("robotSpeed", "1"), angle: 0 };
+  if (!L || (!party && i > 0 && !D.stats.best[`robot/${D.robot[i - 1].id}`])) return robotLevels(D);
+  G = { D, game: "robot", L, i, party, crashes: 0, speed: +store.get("robotSpeed", "1"), angle: 0 };
   const game = G;
   setTimeout(() => G === game && !$("#bot") && drawWorld(0));  // once the page is on screen
   const commands = ["move()", "turn_left()", "turn_right()", "collect()", "front_is_clear()", "on_gem()", "at_goal()"]
     .filter(c => !(L.banned || []).includes(c.slice(0, -2)));
   return `
-    <div class="crumbs"><a href="#/games/${D.track}">Games</a> › <a href="#/games/${D.track}/robot">Robot Maze</a> › Level ${i + 1}</div>
-    <div class="game-head"><div><div class="eyebrow">${ic("bot")} Level ${i + 1} of ${D.robot.length} · par ${L.par} lines</div>
+    ${party ? "" : `<div class="crumbs"><a href="#/games/${D.track}">Games</a> › <a href="#/games/${D.track}/robot">Robot Maze</a> › Level ${i + 1}</div>`}
+    <div class="game-head"><div><div class="eyebrow">${ic("bot")} ${party ? "Robot Race" : `Level ${i + 1} of ${D.robot.length}`} · par ${L.par} lines</div>
       <h1 class="page-title">${esc(L.title)}</h1></div>
       <div class="lv-stars big" id="lv-stars">${starRow(D.stats.best[`robot/${L.id}`] || 0)}</div></div>
     <div class="robot-layout">
@@ -1519,9 +1569,15 @@ function robotFail(m, w, worlds) {
     : `<b>${ic("flag-off")} ${where}Your code finished, but the robot isn't on the flag.</b>`;
   robotMsg("r-fail", why + (m.output ? `<div class="out-label">Printed:</div><pre>${esc(m.output)}</pre>` : ""));
   if (line) selectLine(line);
+  if (G.party) partyReport({ crashes: ++G.crashes });
 }
 
 function robotWin(r) {
+  if (G.party) {
+    chime();
+    robotMsg("r-win", `<div class="win-stars">${starRow(r.stars)}</div><div class="win-title">Your robot made it!</div><p class="explain">Waiting for the others…</p>`);
+    return partyDone({ finished: true, time: partyClock(), stars: r.stars });
+  }
   const next = G.D.robot[G.i + 1];
   G.D.stats = r.stats;
   $("#lv-stars").innerHTML = starRow(r.stats.best[`robot/${G.L.id}`]);
@@ -1568,7 +1624,7 @@ function invadersPage(D) {
     </div>`;
 }
 
-function invStart() {
+function invStart(seed = null, limit = 0) {
   if (G?.game !== "invaders" || G.running) return;
   const canvas = $("#inv-canvas"), stage = $("#inv-stage"), dpr = devicePixelRatio || 1;
   const W = stage.clientWidth, H = 540;
@@ -1579,6 +1635,7 @@ function invStart() {
   const css = getComputedStyle(document.documentElement), v = n => css.getPropertyValue(n).trim();
   Object.assign(G, {
     ctx, W, H, running: true, score: 0, combo: 1, lives: 3, t: 0, last: performance.now(), spawnIn: 0.4, cool: 0,
+    rand: seed ? seededRandom(seed) : Math.random, limit,
     ship: { x: W / 2 }, bullets: [], blocks: [], parts: [], floats: [], missed: [], wrong: [], bag: [],
     stars: Array.from({ length: 70 }, () => ({ x: Math.random() * W, y: Math.random() * H, s: 10 + Math.random() * 40 })),
     color: { accent: v("--accent"), hi: v("--accent-hi"), gold: v("--gold-hi"), text: v("--text"), muted: v("--muted"), line: v("--line-2") },
@@ -1592,19 +1649,20 @@ function invHud() {
   $("#inv-score").textContent = G.score.toLocaleString();
   $("#inv-combo").innerHTML = G.combo > 1 ? `${ic("flame")} x${G.combo} combo` : "";
   document.querySelectorAll("#inv-lives > *").forEach((h, i) => h.classList.toggle("lost", i >= G.lives));
+  if (G.party) partyReport({ score: G.score, lives: G.lives });
 }
 
 function invSpawn() {
-  if (!G.bag.length) G.bag = shuffle(G.D.invaders);
+  if (!G.bag.length) G.bag = shuffle(G.D.invaders, G.rand);
   const line = G.bag.pop();
   G.ctx.font = "600 15px " + getComputedStyle(document.body).getPropertyValue("--mono");
   const w = G.ctx.measureText(line.code).width + 28;
   let x = 10;
   for (let tries = 0; tries < 8; tries++) {  // don't stack on top of a block that's still near the top
-    x = 10 + Math.random() * Math.max(1, G.W - w - 20);
+    x = 10 + G.rand() * Math.max(1, G.W - w - 20);
     if (!G.blocks.some(b => b.y < 60 && x < b.x + b.w && b.x < x + w)) break;
   }
-  G.blocks.push({ line, x, y: -36, w, h: 34, speed: 0.85 + Math.random() * 0.3 });
+  G.blocks.push({ line, x, y: -36, w, h: 34, speed: 0.85 + G.rand() * 0.3 });
 }
 
 function invFloat(x, y, text, color) { G.floats.push({ x, y, text, color, life: 1.2 }); }
@@ -1676,7 +1734,8 @@ function invFrame(now) {
   G.floats = G.floats.filter(f => f.life > 0);
   G.flash = Math.max(0, (G.flash || 0) - dt);
   invDraw();
-  if (G.lives <= 0) return invOver();
+  if (G.limit && $("#inv-time")) $("#inv-time").textContent = Math.max(0, Math.ceil(G.limit - G.t)) + "s";
+  if (G.lives <= 0 || (G.limit && G.t >= G.limit)) return invOver();
   G.frame = requestAnimationFrame(invFrame);
 }
 
@@ -1713,6 +1772,11 @@ function invDraw() {
 
 async function invOver() {
   G.running = false;
+  if (G.party) {
+    $("#inv-overlay").hidden = false;
+    $("#inv-overlay").innerHTML = `<div class="kicker">${G.lives > 0 ? "TIME!" : "OUT OF LIVES"}</div><div class="go-score">${G.score.toLocaleString()}</div><div class="sub">Waiting for the others…</div>`;
+    return partyDone({ score: G.score });
+  }
   const game = G, list = (lines, why) => lines.map(l => `<li><code>${esc(l.code)}</code>${why ? `<span>${esc(l.bug)}</span>` : ""}</li>`).join("");
   let r = { xp: 0, stats: { best: {} } };
   try { r = await api("/api/game/score", { track: G.D.track, game: "invaders", score: G.score }); } catch (e) { toast(e.message); }
@@ -1741,8 +1805,12 @@ function racerPage(D) {
   G = { D, game: "racer", text, pos: 0, typed: 0, errors: 0, phase: "ready",
         lanes: [["you", "You", null], ["ghost", D.stats.best.racer ? "Your best" : "Rookie ghost", ghost],
                 ...(friend ? [["friend", friend.username, friend.best.racer]] : [])] };
+  return `<div class="crumbs"><a href="#/games/${D.track}">Games</a> › Code Racer</div>${raceHtml()}`;
+}
+
+function raceHtml() {
+  const text = G.text;
   return `
-    <div class="crumbs"><a href="#/games/${D.track}">Games</a> › Code Racer</div>
     <div class="card race-card">
       <div class="track">${G.lanes.map(([id, name, wpm]) => `
         <div class="lane"><span class="lane-name">${esc(name)}${wpm ? `<small>${wpm} WPM</small>` : ""}</span>
@@ -1781,12 +1849,13 @@ const raceSecs = () => (performance.now() - G.started) / 1000;
 function raceTick() {
   const t = raceSecs(), len = G.text.length;
   for (const [id, , wpm] of G.lanes) {
-    const p = id === "you" ? G.pos / len : Math.min(1, t * wpm * 5 / 60 / len);
+    const p = id === "you" ? G.pos / len : G.party ? (P.progress[id]?.v || 0) : Math.min(1, t * wpm * 5 / 60 / len);
     $(`#car-${id}`).style.left = `calc(${p} * (100% - 64px))`;
   }
   $("#race-time").textContent = t.toFixed(1);
   $("#race-wpm").textContent = Math.round(G.pos / 5 / (t / 60)) || 0;
   $("#race-acc").textContent = G.typed ? Math.round(100 * (G.typed - G.errors) / G.typed) : 100;
+  if (G.party) partyReport({ v: G.pos / len });
 }
 
 function raceCursor(wrong = false) {
@@ -1797,7 +1866,7 @@ function raceCursor(wrong = false) {
 }
 
 function raceKey(e) {
-  if (G.phase === "ready" && e.key === "Enter") { e.preventDefault(); raceStart(); return true; }
+  if (G.phase === "ready" && e.key === "Enter" && !G.party) { e.preventDefault(); raceStart(); return true; }
   if (G.phase !== "go" || e.ctrlKey || e.metaKey || e.altKey) return false;
   const key = e.key === "Enter" ? "\n" : e.key;
   if (key.length !== 1) return false;
@@ -1821,6 +1890,11 @@ async function raceFinish() {
   clearInterval(G.tick);
   raceTick();
   const t = raceSecs(), wpm = Math.round(G.text.length / 5 / (t / 60)), acc = Math.round(100 * (G.typed - G.errors) / G.typed);
+  if (G.party) {
+    chime();
+    $("#race-result").innerHTML = `<div class="race-done"><div class="race-nums"><div><b>${wpm}</b><small>WPM</small></div><div><b>${acc}%</b><small>accuracy</small></div><div><b>${t.toFixed(1)}s</b><small>time</small></div></div><div class="sub">Finished! Waiting for the others…</div></div>`;
+    return partyDone({ finished: true, time: t, wpm });
+  }
   const place = 1 + G.lanes.filter(([id, , w]) => id !== "you" && G.text.length / (w * 5 / 60) < t).length;
   const game = G;
   let r = { xp: 0, stats: { best: {} } };
@@ -1834,6 +1908,221 @@ async function raceFinish() {
     <div class="gain">+${r.xp} XP</div>
     <div class="btns"><button class="btn primary" data-act="game-again">${ic("rotate-ccw")} Race again</button>
       <a class="btn" href="#/games/${G.D.track}">Back to games</a></div></div>`;
+}
+
+/* ----- party games: play with friends, joined by a game code ----- */
+// Everyone in a party joins the Supabase Realtime room "game:<CODE>". The first player in the room is the host:
+// they pick the game and start it. Each player runs the game on their own screen and broadcasts their progress,
+// so everyone sees the same live scoreboard. Blitz uses a shared random seed, so everyone gets the same bugs.
+const PARTY_GAMES = {
+  race: { name: "Code Race", icon: "gauge", blurb: "Everyone types the same code. First to the finish line wins.", limit: 180 },
+  blitz: { name: "Bug Blitz", icon: "crosshair", blurb: "Same bugs at the same time for 90 seconds. Highest score wins.", limit: 90 },
+  robot: { name: "Robot Race", icon: "bot", blurb: "Same Robot Maze level for everyone. First robot to the flag wins.", limit: 300 },
+};
+const CODE_CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";  // no 0/O or 1/I to mix up
+const newPartyCode = () => Array.from({ length: 6 }, () => CODE_CHARS[Math.floor(Math.random() * CODE_CHARS.length)]).join("");
+let P = null, supa = null;  // the party you're in, and the Realtime connection
+
+function seededRandom(seed) {  // mulberry32: the same seed gives the same numbers on every computer
+  return () => {
+    seed = seed + 0x6D2B79F5 | 0;
+    let t = Math.imul(seed ^ seed >>> 15, 1 | seed);
+    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+  };
+}
+
+async function realtimeAuth() {
+  const r = await api("/api/realtime");
+  if (!supa) {
+    const { createClient } = await import("https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/+esm");
+    supa = createClient(r.url, r.key, { auth: { persistSession: false, autoRefreshToken: false } });
+  }
+  supa.realtime.setAuth(r.token);
+  return r;
+}
+
+async function partyJoin(code) {
+  partyLeave();
+  const r = await realtimeAuth();
+  const me = `${r.username}-${Math.random().toString(16).slice(2, 6)}`;  // unique per window
+  const chan = supa.channel(`game:${code}`, { config: { private: true, broadcast: { self: true }, presence: { key: me } } });
+  P = { code, me, name: r.username, chan, members: {}, phase: "lobby", pick: null, progress: {}, done: {}, round: 0 };
+  chan.on("presence", { event: "sync" }, () => {
+    if (P?.chan !== chan) return;
+    P.members = Object.fromEntries(Object.entries(chan.presenceState()).map(([k, v]) => [k, v[0]]));
+    if (isHost() && P.phase === "lobby") partySend("pick", partyPick());  // so people who just joined see the pick
+    partyDraw();
+    partyCheckEnd();
+  });
+  chan.on("broadcast", { event: "msg" }, ({ payload }) => P?.chan === chan && partyMessage(payload));
+  await new Promise((resolve, reject) => chan.subscribe((status, err) => {
+    if (status === "SUBSCRIBED") resolve();
+    else if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") reject(new Error("Couldn't connect to the game room. " + (err?.message || "")));
+  }));
+  await chan.track({ name: r.username, joined: Date.now() });
+  P.refresh = setInterval(realtimeAuth, 15 * 60 * 1000);  // logins expire after an hour
+}
+
+function partyLeave() {
+  if (!P) return;
+  clearInterval(P.refresh); clearInterval(P.clock);
+  supa?.removeChannel(P.chan);
+  P = null;
+}
+
+const hostKey = () => Object.entries(P.members).sort((a, b) => a[1].joined - b[1].joined)[0]?.[0];
+const isHost = () => hostKey() === P.me;
+const partySend = (type, data = {}) => P.chan.send({ type: "broadcast", event: "msg", payload: { type, from: P.me, ...data } });
+const partyClock = () => (Date.now() - P.startedAt) / 1000;
+function partyPick() {
+  P.pick ||= { game: "race" };
+  P.pick.track ||= P.D?.track;
+  P.pick.level ||= P.D?.robot[3]?.id || P.D?.robot[0]?.id;
+  return P.pick;
+}
+function partyReport(data) {  // live progress, at most 4 times a second
+  if (!P || Date.now() - (P.sentAt || 0) < 250) return;
+  P.sentAt = Date.now();
+  partySend("progress", data);
+}
+function partyDone(result) { partySend("done", { result }); }
+
+async function partyMessage(m) {
+  if (m.type === "pick" && m.from === hostKey()) { P.pick = m; partyDraw(); }
+  if (m.type === "progress") { P.progress[m.from] = m; partyBoard(); }
+  if (m.type === "done") { P.done[m.from] = m.result; partyBoard(); partyCheckEnd(); }
+  if (m.type === "lobby" && m.from === hostKey()) { stopGame(); clearInterval(P.clock); P.phase = "lobby"; partyDraw(); }
+  if (m.type === "start" && m.from === hostKey()) await partyStart(m);
+}
+
+async function partyStart(s) {
+  stopGame();
+  Object.assign(P, { phase: "playing", game: s.game, round: s.round, progress: {}, done: {}, results: null, players: Object.keys(P.members) });
+  partyDraw();
+  let D;
+  try { D = await api(`/api/games?track=${encodeURIComponent(s.track)}`); } catch {
+    $("#party-main").innerHTML = `<div class="card empty">Add the course from the Marketplace to play this one.</div>`;
+    return partyDone({ missing: true });
+  }
+  if (s.game === "race") {
+    G = { D, game: "racer", party: true, text: s.text, pos: 0, typed: 0, errors: 0, phase: "ready",
+          lanes: Object.entries(P.members).map(([k, m]) => [k === P.me ? "you" : k, k === P.me ? "You" : m.name, null]) };
+    $("#party-main").innerHTML = raceHtml();
+    await raceStart();
+  } else if (s.game === "blitz") {
+    G = { D: { ...D, invaders: s.lines }, game: "invaders", party: true, keys: new Set(), running: false };
+    $("#party-main").innerHTML = `
+      <div class="inv-hud"><span class="hud-score">${ic("trophy")} <b id="inv-score">0</b></span><span id="inv-combo" class="hud-combo"></span>
+        <span class="spacer"></span><span class="hud-time">${ic("timer")} <b id="inv-time">${s.limit}s</b></span>
+        <span id="inv-lives" class="hud-lives">${ic("heart", "life").repeat(3)}</span></div>
+      <div class="inv-stage" id="inv-stage"><canvas id="inv-canvas"></canvas><div class="inv-overlay" id="inv-overlay"></div></div>`;
+    for (const n of [3, 2, 1]) { $("#inv-overlay").innerHTML = `<div class="countdown">${n}</div>`; tone(440, 0, 0.15, 0.12); await sleep(700); }
+    tone(880, 0, 0.3, 0.15);
+    invStart(s.seed, s.limit);
+  } else {
+    $("#party-main").innerHTML = robotLevel(D, s.level, true);
+  }
+  P.startedAt = Date.now();
+  P.clock = setInterval(() => {  // out of time: whatever you got counts
+    if (!P || P.done[P.me] || partyClock() < PARTY_GAMES[P.game].limit) return;
+    if (G?.game === "racer") { G.phase = "done"; clearInterval(G.tick); }
+    partyDone(P.game === "race" ? { finished: false, v: G?.pos / G?.text.length || 0 } : { finished: false });
+  }, 1000);
+}
+
+function partyStandings() {
+  const rows = (P.players || []).filter(k => P.members[k] || P.done[k]).map(k => ({ k, name: P.members[k]?.name || k.split("-")[0], r: P.done[k] }));
+  const score = x => !x.r ? -Infinity : P.game === "blitz" ? x.r.score || 0 : x.r.finished ? 1e6 - x.r.time : (x.r.v || 0) - 1;
+  return rows.sort((a, b) => score(b) - score(a));
+}
+
+function partyCheckEnd() {
+  if (P?.phase !== "playing" || !P.players) return;
+  const still = P.players.filter(k => P.members[k]);
+  if (!still.length || !still.every(k => P.done[k])) return;
+  P.phase = "results";
+  clearInterval(P.clock);
+  partyResults();
+}
+
+async function partyResults() {
+  const rows = partyStandings(), place = rows.findIndex(x => x.k === P.me) + 1;
+  const stat = x => !x.r || x.r.missing ? "-" : P.game === "blitz" ? x.r.score.toLocaleString()
+    : x.r.finished ? `${x.r.time.toFixed(1)}s${x.r.wpm ? ` · ${x.r.wpm} WPM` : ""}` : "Didn't finish";
+  let xp = 0;
+  try { xp = (await api("/api/game/match", { track: P.pick?.track || G?.D?.track, game: P.game, place, players: rows.length })).xp; } catch {}
+  place === 1 ? (chime(), confetti()) : chime(true);
+  stopGame();
+  $("#party-main").innerHTML = `<div class="card party-results">
+    <div class="kicker">${ic(PARTY_GAMES[P.game].icon)} ${PARTY_GAMES[P.game].name.toUpperCase()} · RESULTS</div>
+    <div class="podium">${rows.map((x, i) => `<div class="pod-row ${x.k === P.me ? "you" : ""} p${i + 1}">
+      <span class="place">${i < 3 ? ic(i ? "medal" : "trophy") : ""}${i + 1}</span>${avatar(x.name, null)}
+      <b>${esc(x.name)}${x.k === P.me ? " (you)" : ""}</b><span class="spacer"></span><span class="pod-stat">${stat(x)}</span></div>`).join("")}</div>
+    <div class="gain">+${xp} XP</div>
+    ${isHost() ? `<button class="btn primary" data-act="party-lobby">${ic("rotate-ccw")} Back to the lobby</button>` : `<div class="sub">Waiting for the host to pick the next game…</div>`}
+  </div>`;
+}
+
+async function partyPage() {
+  const code = (route.code || "").toUpperCase();
+  if (!/^[A-Z2-9]{6}$/.test(code)) return `<div class="card empty">That game code doesn't look right. Codes are 6 letters and numbers.</div>`;
+  if (P?.code !== code) {
+    try { await partyJoin(code); } catch (e) {
+      partyLeave();
+      return `<div class="crumbs"><a href="#/games">Games</a> › Party</div><div class="card empty">${esc(e.message)}</div>`;
+    }
+  }
+  const track = store.get("gameCourse");
+  if (!P.D) try {
+    P.D = await api(`/api/games?track=${encodeURIComponent(track || (await getOverview()).courses[0]?.track)}`);
+    if (isHost()) partySend("pick", partyPick());
+  } catch {}
+  setTimeout(partyDraw);
+  return `
+    <div class="crumbs"><a href="#/games">Games</a> › Party</div>
+    <div class="party-head">
+      <div><div class="eyebrow">${ic("users")} Play with friends</div><h1 class="page-title">Game code <span class="party-code">${code}</span></h1></div>
+      <button class="btn" data-act="party-copy">${ic("copy")} Copy code</button>
+    </div>
+    <div class="party-layout"><div id="party-main"></div><aside class="card party-side" id="party-side"></aside></div>`;
+}
+
+function partyDraw() {
+  if (!P || !$("#party-side")) return;
+  partyBoard();
+  if (P.phase !== "lobby") return;
+  const host = isHost(), pick = host ? partyPick() : P.pick, n = Object.keys(P.members).length;
+  const card = g => `<button class="pg-card ${pick?.game === g ? "on" : ""}" ${host ? `data-act="party-pick" data-value="${g}"` : "disabled"}>
+      <span class="gc-icon">${ic(PARTY_GAMES[g].icon)}</span><b>${PARTY_GAMES[g].name}</b><span>${PARTY_GAMES[g].blurb}</span></button>`;
+  const levels = P.D?.robot || [];
+  $("#party-main").innerHTML = `
+    <div class="section-title">${host ? "Pick a game" : `${esc(P.members[hostKey()]?.name || "The host")} is picking a game`}</div>
+    <div class="pg-grid">${Object.keys(PARTY_GAMES).map(card).join("")}</div>
+    ${pick?.game === "robot" && host && levels.length ? `<label class="pg-level">Level <select data-party-level>${levels.map((l, i) =>
+      `<option value="${esc(l.id)}" ${l.id === pick.level ? "selected" : ""}>${i + 1}. ${esc(l.title)}</option>`).join("")}</select></label>` : ""}
+    <div class="pg-start">${host
+      ? `<button class="btn primary big" data-act="party-start" ${n < 2 ? "disabled" : ""}>${ic("play")} Start ${PARTY_GAMES[pick.game].name}</button>
+         <span class="sub">${n < 2 ? "Waiting for a friend to join. Send them the code!" : `${n} players ready`}</span>`
+      : `<span class="sub">${ic("clock")} Waiting for the host to start…</span>`}</div>`;
+}
+
+function partyBoard() {
+  const side = $("#party-side");
+  if (!P || !side) return;
+  const playing = P.phase === "playing", host = hostKey();
+  const status = k => {
+    const d = P.done[k], p = P.progress[k];
+    if (!playing) return k === host ? `${ic("crown")} Host` : "";
+    if (d) return d.missing ? "No course" : P.game === "blitz" ? `${ic("flag")} ${d.score.toLocaleString()}` : d.finished ? `${ic("flag")} ${d.time.toFixed(1)}s` : "Out of time";
+    if (P.game === "race") return `<span class="mini-bar"><span style="width:${Math.round((p?.v || 0) * 100)}%"></span></span>`;
+    if (P.game === "blitz") return `${(p?.score || 0).toLocaleString()} ${ic("heart", "life")}${p?.lives ?? 3}`;
+    return p?.crashes ? `${ic("octagon-x")} ${p.crashes} crash${p.crashes === 1 ? "" : "es"}` : "Coding…";
+  };
+  side.innerHTML = `<div class="section-title" style="margin-top:0">Players <span>${Object.keys(P.members).length}</span></div>
+    ${Object.entries(P.members).sort((a, b) => a[1].joined - b[1].joined).map(([k, m]) => `
+      <div class="pl-row ${k === P.me ? "you" : ""}">${avatar(m.name, null)}<b>${esc(m.name)}${k === P.me ? " (you)" : ""}</b>
+        <span class="spacer"></span><span class="pl-stat">${status(k)}</span></div>`).join("")}`;
 }
 
 // keyboard for the games: Invaders steers and shoots, Racer types. Returns true when the game used the key.
@@ -1984,6 +2273,17 @@ async function doAct(el) {
     if (act === "inv-start") return invStart();
     if (act === "race-start") return raceStart();
     if (act === "game-again") return render();
+    if (act === "party-create") return go(`#/party/${newPartyCode()}`);
+    if (act === "party-copy") { await navigator.clipboard.writeText(P.code); return toast(`Copied ${P.code}. Send it to your friends!`); }
+    if (act === "party-pick") { partyPick().game = el.dataset.value; partySend("pick", P.pick); return partyDraw(); }
+    if (act === "party-lobby") return partySend("lobby");
+    if (act === "party-start") {
+      const pick = partyPick(), s = { game: pick.game, track: pick.track, round: P.round + 1 };
+      if (pick.game === "race") s.text = shuffle(P.D.racer).slice(0, 2).join("\n");
+      if (pick.game === "blitz") Object.assign(s, { seed: Math.floor(Math.random() * 2 ** 31), lines: P.D.invaders, limit: 90 });
+      if (pick.game === "robot") s.level = pick.level;
+      return partySend("start", s);
+    }
     if (act === "copy-name") {
       await navigator.clipboard.writeText(ME.username);
       return toast(`Copied "${ME.username}". Send it to a friend!`);
@@ -2041,6 +2341,7 @@ document.addEventListener("submit", async e => {
       btn.disabled = false;
       return;
     }
+    if (form.dataset.form === "party-join") return go(`#/party/${data.code.trim().toUpperCase()}`);
     if (form.dataset.form === "add") {
       const r = await api("/api/friends/add", data);
       toast(r.result === "accepted" ? `You and ${data.username} are now friends!` : `Request sent to ${data.username}`);
@@ -2433,13 +2734,16 @@ document.addEventListener("keydown", e => {
   if (e.key === "Escape") { $("#win").classList.add("hidden"); $("#code-view").classList.add("hidden"); }
 });
 document.addEventListener("keyup", e => G && gameKey(e, false));
+document.addEventListener("change", e => {
+  if (e.target.matches("[data-party-level]") && P) { partyPick().level = e.target.value; partySend("pick", P.pick); }
+});
 window.addEventListener("blur", () => G?.keys?.clear());  // no stuck keys after switching windows
 window.addEventListener("hashchange", () => render());
 // coming back from VS Code: refresh in case files changed
 window.addEventListener("focus", async () => {
   // Skip pages with forms: re-rendering would wipe half-typed text, and on the profile page it would
   // throw away the file box just as the picture picker closes (so the chosen picture got lost).
-  if (busy || !ME.signed_in || ["profile", "friends", "settings", "games"].includes(route.page)) return;
+  if (busy || !ME.signed_in || ["profile", "friends", "settings", "games", "party"].includes(route.page)) return;
   if (route.page === "course" && S) {
     S = await api(`/api/state?track=${encodeURIComponent(S.track)}`);
     renderSide();

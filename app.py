@@ -267,6 +267,10 @@ class Handler(BaseHTTPRequestHandler):
                 return self.send(me())
             if url.path == "/api/market":
                 return self.send(market())
+            if url.path == "/api/realtime":  # party games: the window joins a Supabase Realtime room as you
+                s = cloud.session()
+                return self.send({"url": cloud.CONFIG["url"], "key": cloud.CONFIG["key"],
+                                  "token": s["access_token"], "username": s["username"]})
             if url.path == "/api/games":
                 if q.get("track") not in learn.tracks():
                     return self.send({"error": "unknown track"}, 400)
@@ -322,6 +326,17 @@ class Handler(BaseHTTPRequestHandler):
                 if not isinstance(code, str) or len(code) > 20_000:
                     return self.send({"error": "bad game request"}, 400)
                 return self.send(play_robot(body["track"], body.get("level"), code))
+            if action == "/api/game/match":  # a finished party game with friends: XP, more for 1st and 2nd
+                place, players = body.get("place"), body.get("players")
+                if body.get("game") not in ("race", "blitz", "robot") or not isinstance(place, int) \
+                        or not isinstance(players, int) or not 1 <= place <= players <= 8:
+                    return self.send({"error": "bad game request"}, 400)
+                xp = 10 + (players > 1) * {1: 25, 2: 10}.get(place, 0)
+                won = place == 1 and players > 1
+                wins = learn.load_progress().get("_games", {}).get(body["track"], {}).get("best", {}).get("party_wins", 0)
+                stats = learn.game_record(body["track"], xp, "party_wins", wins + won)
+                cloud.sync_in_background()
+                return self.send({"xp": xp, "stats": stats})
             if action == "/api/game/score":  # a finished Bug Invaders game or Code Racer race
                 game, score = body.get("game"), body.get("score")
                 limit = {"invaders": 1_000_000, "racer": 400}.get(game)  # nobody types faster than ~300 WPM
