@@ -56,6 +56,11 @@ The **Games** tab has real games for each course you've added. Every game gives 
 - **Bug Invaders:** lines of code fall from the sky. Shoot the buggy ones, let the good ones land.
 - **Code Racer:** type real code as fast as you can, racing your best time (and your fastest friend).
 
+**Play with friends:** in Games, click **Create a game** and send your friends the 6-letter code; they type it
+into **Join**. The first player in the room is the host and picks **Code Race**, **Bug Blitz** or **Robot Race**.
+Everyone plays on their own screen with a live scoreboard, and the winner gets the most XP. Rooms run on Supabase
+Realtime; only signed-in players can join (the rules are at the end of `supabase/schema.sql`).
+
 A course's games live in `tracks/<course>/games/`: `robot.json` (levels: `maps` drawn with `#` walls, `*` gems,
 `G` flag and `>` `<` `^` `v` for the robot), `robot.py` (runs the robot; `track.json` says how under `"robot"`),
 `invaders.json` (lines with `"ok": true` or a `"bug"` explanation) and `racer.txt` (snippets split by `---`).

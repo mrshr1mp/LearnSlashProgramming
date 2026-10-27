@@ -416,6 +416,8 @@
   .pg-card { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; padding: 16px; border-radius: 14px; text-align: left;
              background: var(--surface); border: 1.5px solid var(--line); color: var(--text); font: inherit; cursor: pointer; }
   .pg-card:disabled { cursor: default; }
+  .pg-card .gc-icon { width: 42px; height: 42px; border-radius: 11px; display: grid; place-items: center; color: var(--accent-hi);
+                      background: color-mix(in srgb, var(--accent) 14%, transparent); }
   .pg-card span:last-child { color: var(--muted); font-size: 13.5px; }
   .pg-card b { font: 700 17px var(--display); }
   .pg-card.on { border-color: var(--accent-hi); background: color-mix(in srgb, var(--accent) 10%, var(--surface)); }
