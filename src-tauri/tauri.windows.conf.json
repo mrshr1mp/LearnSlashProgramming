@@ -1,0 +1,9 @@
+{
+  "bundle": {
+    "targets": ["nsis"],
+    "resources": ["app/**/*", "python/**/*"],
+    "windows": {
+      "nsis": { "installMode": "currentUser" }
+    }
+  }
+}

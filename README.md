@@ -26,6 +26,23 @@ end up on someone else's account. Everyone uses their own copy of the app.
 2. Get the code: `git clone <repo link>`, then open the folder.
 3. Double-click `Start Learning.bat` and **Register**.
 
+**The easy way: install the app.** Download the latest installer from the
+[Releases page](https://github.com/mrshr1mp/LearnSlashProgramming/releases/latest):
+- **Windows:** the `.exe`. Python comes built in. Windows may say "Windows protected your PC" because the app isn't
+  code-signed (that costs money): click **More info**, then **Run anyway**.
+- **Linux:** the `.AppImage` (make it executable, then double-click) or the `.deb` for Ubuntu/Debian.
+
+The installed app updates itself: when there's a new version it asks, installs it and restarts. Your code and progress
+live in your user folder (`%APPDATA%\com.learnslashprogramming.app` on Windows, `~/.local/share/com.learnslashprogramming.app`
+on Linux), so updates never touch them. Install [VS Code](https://code.visualstudio.com/) too, for writing your code.
+
+**Releasing a new version** (for whoever maintains the app): push your commits, then tag them:
+`git tag v0.2.0` and `git push origin v0.2.0`. GitHub builds the installers (about 15 minutes) and publishes them, and
+every installed app offers the update. The build is in `.github/workflows/release.yml`; it needs the repository
+secret `TAURI_SIGNING_PRIVATE_KEY` (the update-signing key, kept outside the repo).
+
+**Or run it from the code** (for working on the app itself):
+
 **On Linux** (commands for Ubuntu/Debian; other distros use their own package manager):
 1. `sudo apt install python3 git`, plus [VS Code](https://code.visualstudio.com/) (its `code` command lets the app open your files).
    For the app's own window, have Chrome, Chromium, Edge or Brave installed; with only Firefox it opens as a normal tab.

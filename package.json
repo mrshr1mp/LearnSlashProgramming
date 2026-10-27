@@ -1,0 +1,10 @@
+{
+  "private": true,
+  "description": "Only used to build the installable app (see .github/workflows/release.yml)",
+  "scripts": {
+    "tauri": "tauri"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "2.9.4"
+  }
+}

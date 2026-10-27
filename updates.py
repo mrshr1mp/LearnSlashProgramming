@@ -28,7 +28,8 @@ def enabled():
 
 
 def version():
-    return (_git("rev-parse", "--short", "HEAD")[1] if enabled() else "") or "local"
+    # the installed app updates itself (Tauri's updater) and tells us its version number
+    return os.environ.get("LEARN_VERSION") or (_git("rev-parse", "--short", "HEAD")[1] if enabled() else "") or "local"
 
 
 def check():

@@ -11,7 +11,8 @@ from pathlib import Path
 
 ROOT = Path(__file__).parent
 SOURCE = ROOT / "tracks"           # course sources, published to the marketplace with tools/publish_course.py
-WORK = ROOT / "workspace"
+INSTALLED = "LEARN_HOME" in os.environ  # the installed app keeps your files in your user folder (set by the app)
+WORK = Path(os.environ["LEARN_HOME"]) if INSTALLED else ROOT / "workspace"
 TRACKS = WORK / "courses"          # the courses you've added from the marketplace
 PROGRESS = WORK / "progress.json"
 PY = "python" if os.name == "nt" else "python3"  # what to type in a terminal
@@ -244,7 +245,8 @@ def open_in_editor(target, line=None):
     """Open the project in VS Code at the learner's file. Returns False if VS Code isn't on PATH."""
     code = shutil.which("code")
     if code:
-        subprocess.Popen([code, str(ROOT), "-g", f"{target}:{line}" if line else str(target)])
+        folder = WORK if INSTALLED else ROOT  # the installed app's own files aren't yours to edit
+        subprocess.Popen([code, str(folder), "-g", f"{target}:{line}" if line else str(target)])
     return bool(code)
 
 

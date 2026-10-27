@@ -10,3 +10,10 @@ __pycache__/
 # Secrets, just in case one ever gets added
 .env
 *.key
+# building the installable app
+node_modules/
+package-lock.json
+src-tauri/target/
+src-tauri/gen/
+src-tauri/app/
+src-tauri/python/
