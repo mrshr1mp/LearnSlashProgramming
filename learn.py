@@ -2,6 +2,7 @@
 import argparse
 import json
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -9,13 +10,65 @@ from datetime import date
 from pathlib import Path
 
 ROOT = Path(__file__).parent
-TRACKS = ROOT / "tracks"
+SOURCE = ROOT / "tracks"           # course sources, published to the marketplace with tools/publish_course.py
 WORK = ROOT / "workspace"
+TRACKS = WORK / "courses"          # the courses you've added from the marketplace
 PROGRESS = WORK / "progress.json"
+COURSE_ID = re.compile(r"^[a-z0-9_-]{1,40}$")
+SAFE_PATH = re.compile(r"^[A-Za-z0-9_.-]+(/[A-Za-z0-9_.-]+)*$")
 
 
 def tracks():
-    return sorted(d.name for d in TRACKS.iterdir() if (d / "track.json").exists())
+    """The courses you've added (an empty list until you add one from the marketplace)."""
+    if not TRACKS.exists():
+        return []
+    return sorted(d.name for d in TRACKS.iterdir() if not d.name.startswith(".") and (d / "track.json").exists())
+
+
+def installed_version(course_id):
+    f = TRACKS / course_id / ".version"
+    return int(f.read_text()) if f.exists() else None
+
+
+def install_course(course_id, version, files):
+    """Write a downloaded course into workspace/courses/<id>, replacing any older copy.
+    Every file path is checked, so a course can never write outside its own folder."""
+    if not COURSE_ID.match(course_id) or course_id == "courses":
+        raise ValueError(f"Bad course id: {course_id!r}")
+    if not any(f["path"] == "track.json" for f in files):
+        raise ValueError("That course download is incomplete (no track.json)")
+    TRACKS.mkdir(parents=True, exist_ok=True)
+    temp = TRACKS / f".download-{course_id}"
+    shutil.rmtree(temp, ignore_errors=True)
+    for f in files:
+        path = f["path"]
+        target = (temp / path).resolve()
+        if not SAFE_PATH.match(path) or ".." in path.split("/") or temp.resolve() not in target.parents:
+            shutil.rmtree(temp, ignore_errors=True)
+            raise ValueError(f"Refused an unsafe file in the course: {path!r}")
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_text(f["content"], encoding="utf-8")
+    (temp / ".version").write_text(str(version))
+    final = TRACKS / course_id
+    shutil.rmtree(final, ignore_errors=True)  # only the course files: your code and progress live elsewhere
+    temp.rename(final)
+
+
+def remove_course(course_id):
+    """Remove a course's files. Your code and progress for it stay, so adding it back picks up where you left off."""
+    if COURSE_ID.match(course_id):
+        shutil.rmtree(TRACKS / course_id, ignore_errors=True)
+
+
+def seed_courses():
+    """Courses you already have progress in (from before the marketplace) get added automatically,
+    from the copy that ships with the app. Version 0 means "update from the marketplace when you like"."""
+    progress = load_progress()
+    for course_id in progress:
+        src = SOURCE / course_id
+        if not course_id.startswith("_") and (src / "track.json").exists() and course_id not in tracks():
+            shutil.copytree(src, TRACKS / course_id, ignore=shutil.ignore_patterns("__pycache__", "*.pyc"))
+            (TRACKS / course_id / ".version").write_text("0")
 
 
 def track_cfg(track):
@@ -168,6 +221,9 @@ def main():
     p.add_argument("mission", nargs="?", type=int, help="mission number")
     p.add_argument("--track", default="python", help="which language track (folder in tracks/)")
     args = p.parse_args()
+    seed_courses()
+    if args.track not in tracks():
+        sys.exit(f"  You haven't added the {args.track} course. Add it from the Marketplace in the app.")
     if not args.action:
         return status(args.track)
     ms = missions(args.track)

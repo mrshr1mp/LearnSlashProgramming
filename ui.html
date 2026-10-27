@@ -320,6 +320,12 @@
   .feed .kind { margin-left: 4px; vertical-align: 1px; }
   .board-range { display: inline-flex; margin-bottom: 14px; }
 
+  /* marketplace */
+  .market-card .foot { gap: 10px; }
+  .added-tag { display: flex; align-items: center; gap: 6px; font-size: 13.5px; color: var(--pass); font-weight: 500; }
+  a.ghost-card:hover { border-color: var(--hover-line); color: var(--soft); }
+  .ghost-card .plus { color: var(--accent-hi); }
+
   /* settings */
   .settings { padding: 4px 22px; }
   .setting { display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: 16px 0; border-bottom: 1px solid var(--line); cursor: default; }
@@ -515,7 +521,8 @@
     <div class="brand"><div class="logo">&gt;_</div>learn<span>/</span>programming</div>
     <nav class="nav">
       <a href="#/dashboard" data-page="dashboard"><span class="ni"><i data-lucide="house"></i></span>Dashboard</a>
-      <a href="#/courses" data-page="courses"><span class="ni"><i data-lucide="book-open"></i></span>Courses</a>
+      <a href="#/courses" data-page="courses"><span class="ni"><i data-lucide="book-open"></i></span>My courses</a>
+      <a href="#/market" data-page="market"><span class="ni"><i data-lucide="store"></i></span>Marketplace</a>
       <a href="#/friends" data-page="friends"><span class="ni"><i data-lucide="users"></i></span>Friends<span class="count" id="req-count" hidden></span></a>
       <a href="#/achievements" data-page="achievements"><span class="ni"><i data-lucide="trophy"></i></span>Achievements</a>
       <a href="#/settings" data-page="settings"><span class="ni"><i data-lucide="settings"></i></span>Settings</a>
@@ -653,7 +660,7 @@ function parseRoute() {
   const parts = location.hash.replace(/^#\/?/, "").split("/").filter(Boolean);
   if (!parts.length || parts[0] === "dashboard") return { page: "dashboard" };
   if (parts[0] === "friends") return { page: "friends", tab: parts[1] || "list" };
-  if (["courses", "achievements", "settings", "profile"].includes(parts[0])) return { page: parts[0] };
+  if (["courses", "achievements", "settings", "profile", "market"].includes(parts[0])) return { page: parts[0] };
   if (parts[0] === "account") return { page: "profile" };  // old links
   if (parts[0] === "u") return { page: "user", name: decodeURIComponent(parts[1] || "") };
   return { page: "course", track: decodeURIComponent(parts[0]), n: +parts[1] || null };
@@ -721,10 +728,10 @@ async function render(keepScroll = false) {
       $("#req-count").hidden = !f.incoming.length;
       $("#req-count").textContent = f.incoming.length;
     }).catch(() => {});
-    if (["friends", "profile", "user", "settings"].includes(route.page)) {
+    if (["friends", "profile", "user", "settings", "market"].includes(route.page)) {
       $("#course-side").hidden = true;
       $("#view").innerHTML = `<div class="eyebrow">Loading…</div>`;
-      $("#view").innerHTML = await { friends: friendsPage, profile: profilePage, user: userPage, settings: settingsPage }[route.page]();
+      $("#view").innerHTML = await { friends: friendsPage, profile: profilePage, user: userPage, settings: settingsPage, market: marketPage }[route.page]();
     } else if (route.page === "course") {
       if (S?.track !== route.track) lastCheck = null;
       S = await api(`/api/state?track=${encodeURIComponent(route.track)}`);
@@ -782,9 +789,9 @@ function dashboardPage() {
         <div class="n">${esc(ch.name)}<span>${doneCount(ch.missions)}/${ch.missions.length}</span></div>
         <div class="bar"><div style="width:${pct(doneCount(ch.missions), ch.missions.length)}%"></div></div></div>`).join("")}</div>
     </div>`;
-  })() : `<a class="card continue" href="#/courses">
-      <div class="top"><div class="icon-tile">${ic("rocket")}</div><div><h3>Start your first course</h3><div class="sub">Pick a language and do mission 1. It takes about 15 minutes.</div></div></div>
-      <span class="btn primary">Browse courses →</span></a>`;
+  })() : `<a class="card continue" href="#/market">
+      <div class="top"><div class="icon-tile">${ic("rocket")}</div><div><h3>Add your first course</h3><div class="sub">Pick a language in the Marketplace and do mission 1. It takes about 15 minutes.</div></div></div>
+      <span class="btn primary">${ic("store")} Browse the Marketplace</span></a>`;
 
   const recent = O.history.slice(-6).reverse().map(h => {
     const m = titles[`${h.track}/${h.id}`];
@@ -878,15 +885,54 @@ function courseCard(c) {
 }
 
 function coursesPage() {
+  if (!O.courses.length) {
+    return `<div class="eyebrow">Courses</div><h1 class="page-title">My courses</h1>
+      <div class="card empty-state"><div class="es-icon">${ic("book-open")}</div><h3>No courses yet</h3>
+        <p class="sub">Add a course from the Marketplace and it shows up here.</p>
+        <a class="btn primary" href="#/market">${ic("store")} Browse the Marketplace</a></div>`;
+  }
   return `
     <div class="eyebrow">Courses</div>
-    <h1 class="page-title">Courses</h1>
-    <p class="lede">Pick a language. Every course takes you from zero to building real things, with missions checked by real tests.</p>
+    <h1 class="page-title">My courses</h1>
+    <p class="lede">The courses you've added. Every one takes you from zero to building real things, checked by real tests.</p>
     <div class="course-grid">
       ${O.courses.map(courseCard).join("")}
-      <div class="card ghost-card"><div><div class="plus">${ic("plus")}</div><div>More languages can be added later.</div>
-        <div style="font-size:13px;margin-top:6px">A new folder in <code>tracks/</code> shows up here as a course.</div></div></div>
+      <a class="card ghost-card" href="#/market"><div><div class="plus">${ic("store")}</div><div>Get more courses</div>
+        <div style="font-size:13px;margin-top:6px">Browse the Marketplace</div></div></a>
     </div>`;
+}
+
+/* ---------- marketplace ---------- */
+async function marketPage() {
+  const m = await api("/api/market");
+  const card = c => {
+    const have = m.installed[c.id];
+    const added = have !== undefined, outdated = added && have < c.version;
+    const action = !added
+      ? `<button class="btn primary" data-act="market-add" data-id="${esc(c.id)}">${ic("download")} Add course</button>`
+      : outdated
+        ? `<button class="btn primary" data-act="market-add" data-id="${esc(c.id)}">${ic("refresh-cw")} Update</button>`
+        : `<a class="btn" href="#/${esc(c.id)}">${ic("play")} Open</a>`;
+    return `<div class="card course-card market-card">
+      <div class="top"><div class="icon-tile">${logo(c, 32)}</div>
+        <div><h3>${esc(c.name)}</h3><div class="meta">${c.missions} missions · ${c.chapters.length} chapters · version ${c.version}</div></div></div>
+      <p class="desc">${esc(c.description)}</p>
+      <div class="chips">${c.chapters.map(ch => `<span class="chip">${esc(ch)}</span>`).join("")}</div>
+      <div class="foot">
+        <span class="added-tag">${added ? `${ic(outdated ? "package-plus" : "package-check")} ${outdated ? "Update available" : "Added"}` : ""}</span>
+        <span class="spacer"></span>
+        ${added ? `<button class="icon-btn" data-act="market-remove" data-id="${esc(c.id)}" data-name="${esc(c.name)}" title="Remove from my courses">${ic("trash-2")}</button>` : ""}
+        ${action}
+      </div>
+    </div>`;
+  };
+  return `
+    <div class="eyebrow">Marketplace</div>
+    <h1 class="page-title">Marketplace</h1>
+    <p class="lede">Add a course and it downloads to your computer. Your code and progress stay even if you remove a course later.</p>
+    ${m.error ? `<div class="card empty">${ic("triangle-alert")} Couldn't reach the Marketplace (${esc(m.error)}). Your added courses still work.</div>` : ""}
+    <div class="course-grid">${m.courses.map(card).join("")}</div>
+    ${!m.error && !m.courses.length ? `<div class="card empty">No courses published yet.</div>` : ""}`;
 }
 
 /* ---------- achievements ---------- */
@@ -1114,7 +1160,7 @@ function profileView(person, ov, isMe) {
     </div>
     <div class="section-title">Languages</div>
     ${learning.length ? `<div class="lang-badges">${learning.map(langBadge).join("")}</div>`
-      : `<div class="card empty">${isMe ? `No languages yet. <a href="#/courses" style="color:var(--accent-hi)">Start one in Courses →</a>` : "No languages started yet."}</div>`}
+      : `<div class="card empty">${isMe ? `No languages yet. <a href="#/market" style="color:var(--accent-hi)">Find one in the Marketplace →</a>` : "No languages started yet."}</div>`}
     <div class="section-title">Stats</div>
     ${statTiles(ov)}
     <div class="section-title">Activity</div>
@@ -1155,6 +1201,19 @@ async function doAct(el) {
       await api("/api/signout", {});
       authMode = "signin";
       return render();
+    }
+    if (act === "market-add") {
+      el.disabled = true;
+      el.innerHTML = `<span class="spin"></span> Downloading…`;
+      await api("/api/market/add", { id: el.dataset.id });
+      toast("Course ready! Find it in My courses.");
+      return render(true);
+    }
+    if (act === "market-remove") {
+      if (!confirm(`Remove ${el.dataset.name} from your courses? Your code and progress stay, so you can add it back anytime.`)) return;
+      await api("/api/market/remove", { id: el.dataset.id });
+      toast("Course removed");
+      return render(true);
     }
     if (act === "copy-name") {
       await navigator.clipboard.writeText(ME.username);

@@ -210,6 +210,21 @@ def sync_in_background():
     threading.Thread(target=run, daemon=True).start()
 
 
+# ---------- course marketplace ----------
+def catalog():
+    """Every published course (anyone signed in can see these; only publishers can change them)."""
+    return _rest("GET", "courses?select=id,name,description,logo,version,missions,chapters,updated_at&order=name")
+
+
+def download(course_id):
+    """A course's version and all its files, ready for learn.install_course."""
+    info, files = _parallel(f"courses?select=version,missions&id=eq.{quote(course_id)}",
+                            f"course_files?select=path,content&course_id=eq.{quote(course_id)}")
+    if not info:
+        raise CloudError("That course isn't in the marketplace")
+    return info[0]["version"], files
+
+
 # ---------- friends ----------
 def _ids_in(ids):
     return "(" + ",".join(ids) + ")"

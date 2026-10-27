@@ -40,6 +40,15 @@ Signing in syncs a copy to the shared database, where only friends you've accept
 (the rules are in `supabase/schema.sql` and are enforced by the database itself). `cloud.json` only holds the
 *publishable* key, which is designed to be public. Your login session stays in `workspace/session.json`.
 
+## Marketplace
+Nobody starts with any courses. Open **Marketplace** in the app and click **Add course** to download one into
+`workspace/courses/`. When a course gets new missions you'll see **Update** there; your code and progress are
+kept when you update or remove a course. (If you used the app before the marketplace existed, the courses you'd
+already started were added for you.)
+
+Publishing (only accounts listed as publishers in the database can do this): sign in to the app, then run
+`python tools/publish_course.py <course id>` to upload `tracks/<course id>/`. Every publish bumps the version.
+
 ## How it works
 Every mission gives you a brief (`mission.md`) and a file to work in (`workspace/python/kit/...`).
 You write real code in a real editor. `check` runs hidden tests against it and tells you exactly what's wrong.
@@ -81,11 +90,12 @@ cloud.py, cloud.json     accounts, syncing and friends (Supabase)
 supabase/schema.sql      the database tables and privacy rules
 ui.html                  the app's screen
 learn.py                 mission control (start, check, progress), also usable on its own
-tracks/python/           the Python track
+tools/publish_course.py  uploads a course to the marketplace (publishers only)
+tracks/python/           the Python course's source (what gets published)
   track.json             how to run tests, rank names, plain-English error explanations
   harness.py             the test runner
   01_logscan/            one mission: mission.md, starter.py, test.py, samples/
-workspace/               YOUR code and progress (created when you start a mission)
+workspace/               YOUR code, progress and added courses (never uploaded to git)
 ```
 
 ## Adding more
@@ -96,6 +106,7 @@ workspace/               YOUR code and progress (created when you start a missio
 - optional `starter.py` and a `samples/` folder
 
 The folder name sets the order. You can ask Claude to write a "season 2" of missions in this format.
+Publish the course again afterwards so everyone gets the new missions.
 
 **A new language:** make `tracks/<language>/` with its own `track.json`, harness and missions.
 The `run` command in `track.json` says how to test a solution, e.g. `["node", "{track}/harness.js", "{test}", "{solution}"]`.

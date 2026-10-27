@@ -113,6 +113,16 @@ def friend_overview(username):
             "checks": {a["day"]: a["checks"] for a in p["activity"]}}
 
 
+def market():
+    """The marketplace catalog, plus which courses you've added (and at which version)."""
+    installed = {t: learn.installed_version(t) for t in learn.tracks()}
+    try:
+        courses, error = cloud.catalog(), None
+    except cloud.CloudError as e:
+        courses, error = [], str(e)  # offline: you can still use the courses you've added
+    return {"courses": courses, "installed": installed, "error": error}
+
+
 def current_streak(days):
     """Days in a row with activity, ending today or yesterday (ISO date strings)."""
     day, streak = date.today(), 0
@@ -219,6 +229,8 @@ class Handler(BaseHTTPRequestHandler):
                 return self.send(state(q["track"]))
             if url.path == "/api/me":
                 return self.send(me())
+            if url.path == "/api/market":
+                return self.send(market())
             if url.path == "/api/ping":  # the open window checks in so we know it's still there
                 return self.send({"update": updates.status["available"]})
             if url.path == "/api/friends":  # ?light=1: just requests, for the sidebar badge
@@ -253,6 +265,16 @@ class Handler(BaseHTTPRequestHandler):
             self.send({"result": "restarting"})
             return restart()
         try:
+            if action in ("/api/market/add", "/api/market/remove"):
+                course_id = body.get("id", "")
+                if not learn.COURSE_ID.match(course_id):
+                    return self.send({"error": "unknown course"}, 400)
+                if action == "/api/market/add":  # also used for "Update": a fresh copy replaces the old one
+                    version, files = cloud.download(course_id)
+                    learn.install_course(course_id, version, files)
+                else:
+                    learn.remove_course(course_id)
+                return self.send(market())
             if action == "/api/settings":
                 before = learn.load_settings()["share_code"]
                 if learn.save_settings(body)["share_code"] != before:
@@ -294,7 +316,7 @@ class Handler(BaseHTTPRequestHandler):
                 if action == "/api/friends/remove":
                     cloud.remove_friend(name)
                     return self.send({"result": "removed"})
-        except cloud.CloudError as e:
+        except (cloud.CloudError, ValueError) as e:
             return self.send({"error": str(e)}, 400)
         return self.mission_action(action, body)
 
@@ -396,6 +418,7 @@ def log_to_file():
 
 def main():
     log_to_file()
+    learn.seed_courses()  # courses you already had progress in, from before the marketplace
     url = f"http://127.0.0.1:{PORT}/"
     try:
         server = Server(("127.0.0.1", PORT), Handler)
