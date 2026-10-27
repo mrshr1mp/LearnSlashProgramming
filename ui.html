@@ -683,7 +683,19 @@ async function waitForNewVersion(old) {
 }
 
 // tell the app this window is still open (it quits a few minutes after the window closes)
-setInterval(() => api("/api/ping").catch(() => {}), 30 * 1000);
+// The answer also says whether the background update check found something, so the banner appears
+// soon after launch (the first check finishes a few seconds after the app opens).
+async function ping() {
+  try {
+    const p = await api("/api/ping");
+    if (ME.signed_in && p.update && !ME.update?.available) {
+      ME = await api("/api/me");
+      renderMe();
+    }
+  } catch {}
+}
+setInterval(ping, 30 * 1000);
+setTimeout(ping, 5000);
 
 // check every few minutes whether the server has found an update, so the banner shows up on its own
 setInterval(async () => {

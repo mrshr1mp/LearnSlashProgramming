@@ -9,6 +9,7 @@ import re
 import threading
 import time
 import urllib.error
+from concurrent.futures import ThreadPoolExecutor
 from datetime import date, timedelta
 import urllib.request
 from urllib.parse import quote
@@ -20,6 +21,7 @@ SESSION = learn.WORK / "session.json"
 USERNAME = re.compile(r"^[A-Za-z0-9_]{3,20}$")
 MAX_CODE = 100_000  # bytes, same limit as the database
 status = {"synced_at": None, "error": None}
+_session_lock = threading.Lock()
 
 
 class CloudError(Exception):
@@ -64,18 +66,19 @@ def _save_session(auth):
 
 def session():
     """The current login, refreshed if it expired. None when signed out."""
-    if not SESSION.exists():
-        return None
-    s = json.loads(SESSION.read_text())
-    if time.time() > s["expires_at"]:
-        try:
-            s = _save_session(_request("POST", "/auth/v1/token?grant_type=refresh_token", {"refresh_token": s["refresh_token"]}))
-        except CloudError as e:
-            if e.offline:
-                return s  # keep you signed in; calls will just fail until you're back online
-            SESSION.unlink(missing_ok=True)
+    with _session_lock:  # one refresh at a time: refreshing the same login twice can get it revoked
+        if not SESSION.exists():
             return None
-    return s
+        s = json.loads(SESSION.read_text())
+        if time.time() > s["expires_at"]:
+            try:
+                s = _save_session(_request("POST", "/auth/v1/token?grant_type=refresh_token", {"refresh_token": s["refresh_token"]}))
+            except CloudError as e:
+                if e.offline:
+                    return s  # keep you signed in; calls will just fail until you're back online
+                SESSION.unlink(missing_ok=True)
+                return None
+        return s
 
 
 def _check_owner(user_id=None):
@@ -138,6 +141,13 @@ def _rest(method, path, body=None, prefer=None):
     if not s:
         raise CloudError("You're signed out")
     return _request(method, "/rest/v1/" + path, body, s["access_token"], prefer)
+
+
+def _parallel(*paths):
+    """GET several things at the same time instead of one after another (each trip is ~0.2 s)."""
+    session()  # refresh the login once here, not in every thread
+    with ThreadPoolExecutor(max_workers=len(paths)) as pool:
+        return list(pool.map(lambda path: _rest("GET", path), paths))
 
 
 # ---------- profile picture ----------
@@ -211,21 +221,23 @@ def friends(details=True):
     me = session()["user_id"]
     rows = _rest("GET", "friendships?select=requester,addressee,status")
     others = {r["requester"] if r["addressee"] == me else r["addressee"] for r in rows}
-    people = {p["id"]: p for p in _rest("GET", f"profiles?select=id,username,avatar&id=in.{_ids_in(others)}")} if others else {}
     accepted = [r["requester"] if r["addressee"] == me else r["addressee"] for r in rows if r["status"] == "accepted"]
+    queries = {}  # everything below only needs the friendship list, so ask for it all at once
+    if others:
+        queries["people"] = f"profiles?select=id,username,avatar&id=in.{_ids_in(others)}"
+    if details and accepted:
+        since = (date.today() - timedelta(days=120)).isoformat()
+        queries["completions"] = f"completions?select=user_id,track,mission_id,xp,completed_on&user_id=in.{_ids_in(accepted)}"
+        queries["activity"] = f"activity?select=user_id,day&user_id=in.{_ids_in(accepted)}&day=gte.{since}"
+    answers = dict(zip(queries, _parallel(*queries.values()))) if queries else {}
+    people = {p["id"]: p for p in answers.get("people", [])}
     person = lambda i: {"username": people[i]["username"], "avatar": people[i]["avatar"]}
-    result = {
+    return {
         "friends": [{**person(i), "id": i} for i in accepted if i in people],
         "incoming": [person(r["requester"]) for r in rows if r["status"] == "pending" and r["addressee"] == me and r["requester"] in people],
         "outgoing": [person(r["addressee"]) for r in rows if r["status"] == "pending" and r["requester"] == me and r["addressee"] in people],
-        "completions": [], "activity": [],
+        "completions": answers.get("completions", []), "activity": answers.get("activity", []),
     }
-    if details and accepted:
-        ids = _ids_in(accepted)
-        since = (date.today() - timedelta(days=120)).isoformat()
-        result["completions"] = _rest("GET", f"completions?select=user_id,track,mission_id,xp,completed_on&user_id=in.{ids}")
-        result["activity"] = _rest("GET", f"activity?select=user_id,day&user_id=in.{ids}&day=gte.{since}")
-    return result
 
 
 def add_friend(username):
@@ -256,14 +268,11 @@ def profile(username):
     """A friend's finished missions and activity. The database only answers for accepted friends."""
     p = _person(username)
     uid = p["id"]
-    return {
-        "avatar": p["avatar"],
-        "joined": p["created_at"],
-        "completions": _rest("GET", f"completions?select=track,mission_id,completed_on&user_id=eq.{uid}"),
-        "activity": _rest("GET", f"activity?select=day,checks&user_id=eq.{uid}"),
-        # only lists missions whose code you're allowed to see (ones you've finished too)
-        "readable": _rest("GET", f"solutions?select=track,mission_id&user_id=eq.{uid}"),
-    }
+    completions, activity, readable = _parallel(
+        f"completions?select=track,mission_id,completed_on&user_id=eq.{uid}",
+        f"activity?select=day,checks&user_id=eq.{uid}",
+        f"solutions?select=track,mission_id&user_id=eq.{uid}")  # only missions whose code you're allowed to see
+    return {"avatar": p["avatar"], "joined": p["created_at"], "completions": completions, "activity": activity, "readable": readable}
 
 
 def code(username, track, mission_id):

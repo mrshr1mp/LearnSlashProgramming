@@ -26,8 +26,9 @@ end up on someone else's account. Everyone uses their own copy of the app.
 2. Get the code: `git clone <repo link>`, then open the folder.
 3. Double-click `Start Learning.bat` and **Register**.
 
-**Updates install themselves.** Every time the app opens it checks GitHub and starts the newest version, and
-while it's open it checks every 10 minutes and shows an **Update available** banner with what changed.
+**One-click updates.** The app opens right away and checks GitHub in the background. If there's a new version, an
+**Update available** banner appears within a few seconds (and it keeps checking every 10 minutes while open).
+Click **Update now** and it downloads, restarts and reloads by itself.
 Updates never touch `workspace/`, so nobody's code or progress is affected.
 
 **Shipping an update** (for whoever maintains the app): commit, then `git push`. Write a clear first line in the

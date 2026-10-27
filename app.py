@@ -220,7 +220,7 @@ class Handler(BaseHTTPRequestHandler):
             if url.path == "/api/me":
                 return self.send(me())
             if url.path == "/api/ping":  # the open window checks in so we know it's still there
-                return self.send({})
+                return self.send({"update": updates.status["available"]})
             if url.path == "/api/friends":  # ?light=1: just requests, for the sidebar badge
                 return self.send(friends_view(details=q.get("light") != "1"))
             if url.path.startswith("/api/user") and not cloud.USERNAME.match(q.get("name", "")):
@@ -396,12 +396,6 @@ def log_to_file():
 
 def main():
     log_to_file()
-    if "--updated" not in sys.argv and updates.check():
-        print("\n  Updating learn/programming...")
-        ok, message = updates.apply()
-        if ok:  # run the new version instead of this one
-            sys.exit(subprocess.call([sys.executable, str(learn.ROOT / "app.py"), "--updated", *sys.argv[1:]]))
-        print(f"  Couldn't update ({message}). Starting the current version.")
     url = f"http://127.0.0.1:{PORT}/"
     try:
         server = Server(("127.0.0.1", PORT), Handler)
@@ -412,7 +406,7 @@ def main():
         return open_window(url)
     print(f"\n  learn/programming ({VERSION}) is running at {url}\n  Close this window to quit.\n")
     cloud.sync_in_background()  # catch up on anything finished while offline
-    updates.check_in_background()
+    updates.check_in_background()  # first check right away, without making the window wait for GitHub
     quit_when_window_closed(server)
     if "--no-window" not in sys.argv:  # after an in-app update, the old window just reloads
         open_window(url)
