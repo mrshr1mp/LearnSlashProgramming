@@ -3,6 +3,7 @@
   "logo": "https://cdn.jsdelivr.net/npm/devicon@2.16.0/icons/python/python-original.svg",
   "description": "From your very first line of code to building your own programming language. Lessons, real tools, puzzles and bosses.",
   "run": ["{python}", "{track}/harness.py", "{test}", "{solution}"],
+  "robot": ["{python}", "{track}/games/robot.py", "{level}", "{solution}"],
   "ranks": [[0, "Hello Worlder"], [100, "Bug Squasher"], [380, "Apprentice"], [700, "Script Slinger"],
             [1100, "Toolsmith"], [1630, "Pythonista"], [2500, "Code Wizard"], [3480, "Python Master"]],
   "errors": {

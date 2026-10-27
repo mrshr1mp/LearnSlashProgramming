@@ -50,13 +50,15 @@ Publishing (only accounts listed as publishers in the database can do this): sig
 `python tools/publish_course.py <course id>` to upload `tracks/<course id>/`. Every publish bumps the version.
 
 ## Games
-The **Games** tab has quick games for each course you've added: **Bug Squash** (fix 3 broken snippets
-against the clock), **Speed Run** (5 tiny challenges from scratch) and **Code Golf** (pass the tests in as
-few characters as you can). You type code right in the app, and the same tests as missions check it.
-Every win gives XP, and friends can see your game XP and golf scores.
+The **Games** tab has real games for each course you've added. Every game gives XP, and friends see your scores.
+- **Robot Maze:** 12 levels. Write real code to steer a robot to the flag; loops, ifs and functions unlock harder mazes.
+  Three stars per level: reach the flag, grab every gem, use par lines or fewer.
+- **Bug Invaders:** lines of code fall from the sky. Shoot the buggy ones, let the good ones land.
+- **Code Racer:** type real code as fast as you can, racing your best time (and your fastest friend).
 
-A course's games live in `tracks/<course>/games/*.game`: a `title:` line (and `golf: <par>` for Code Golf),
-a blank line, the task, then `=== starter`, `=== broken` and `=== test` sections.
+A course's games live in `tracks/<course>/games/`: `robot.json` (levels: `maps` drawn with `#` walls, `*` gems,
+`G` flag and `>` `<` `^` `v` for the robot), `robot.py` (runs the robot; `track.json` says how under `"robot"`),
+`invaders.json` (lines with `"ok": true` or a `"bug"` explanation) and `racer.txt` (snippets split by `---`).
 
 ## How it works
 Every mission gives you a brief (`mission.md`) and a file to work in (`workspace/python/kit/...`).

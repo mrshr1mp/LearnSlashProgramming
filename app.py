@@ -166,22 +166,36 @@ def friends_view(details=True):
 
 
 def games_view(track):
-    """A course's game challenges (without their tests), your stats, and friends' best scores."""
+    """A course's games (Robot Maze levels, Bug Invaders lines, Code Racer snippets), your stats and friends' bests."""
     cfg = learn.track_cfg(track)
     try:
         friends = cloud.friend_games(track)
     except cloud.CloudError:
         friends = []  # offline: you can still play
     return {"track": track, "name": cfg["name"], "logo": cfg.get("logo", ""), "errors": cfg.get("errors", {}),
-            "games": [{k: v for k, v in g.items() if k != "test"} for g in learn.games(track)],
-            "stats": learn.load_progress().get("_games", {}).get(track, {"xp": 0, "best": {}}), "friends": friends}
+            **learn.games(track), "stats": learn.load_progress().get("_games", {}).get(track, {"xp": 0, "best": {}}),
+            "friends": friends}
 
 
-def find_game(track, game_id):
-    g = next((g for g in learn.games(track) if g["id"] == game_id), None) if track in learn.tracks() else None
-    if not g:
-        raise ValueError("That game isn't in this course")
-    return g
+def play_robot(track, level_id, code):
+    """Run a Robot Maze level. Stars: reach the flag on every world, grab every gem, and stay within par."""
+    level = next((l for l in learn.games(track)["robot"] if l["id"] == level_id), None)
+    if not level:
+        raise ValueError("That level isn't in this course")
+    report = learn.run_robot(track, level, code)
+    maps = report["maps"]
+    won = bool(maps) and all(m["won"] for m in maps)
+    stars = won and 1 + all(m["gems"] == m["gems_total"] for m in maps) + (learn.code_lines(code) <= level["par"])
+    report.update(won=won, stars=stars or 0, lines=learn.code_lines(code), xp=10 * stars if won else 0)
+    if won:
+        report["stats"] = learn.game_record(track, report["xp"], f"robot/{level_id}", stars)
+        cloud.sync_in_background()
+    return report
+
+
+def game_xp(game, score):
+    """XP for a finished Bug Invaders game (score) or Code Racer race (words per minute)."""
+    return min(40, 5 + score // 250) if game == "invaders" else min(30, 5 + score // 10)
 
 
 def me():
@@ -301,28 +315,22 @@ class Handler(BaseHTTPRequestHandler):
                 else:
                     learn.remove_course(course_id)
                 return self.send(market())
-            if action == "/api/game/check":  # test code typed into a game; solving one gives XP
-                track, mode, code = body.get("track"), body.get("mode"), body.get("code")
-                g = find_game(track, body.get("game"))
-                if mode not in learn.GAME_XP or not isinstance(code, str) or len(code) > 20_000:
+            if action.startswith("/api/game/") and body.get("track") not in learn.tracks():
+                return self.send({"error": "unknown track"}, 400)
+            if action == "/api/game/robot":  # run your Robot Maze code; the app animates the result
+                code = body.get("code")
+                if not isinstance(code, str) or len(code) > 20_000:
                     return self.send({"error": "bad game request"}, 400)
-                passed, output, solution = learn.run_game(track, g, code)
-                chars = len(code.strip())
-                stats = None
-                if passed:
-                    golf = mode == "golf" and g["golf"]
-                    stats = learn.game_record(track, learn.GAME_XP[mode], f"golf/{g['id']}" if golf else None, chars)
-                    cloud.sync_in_background()
-                return self.send({"passed": passed, "output": output, "results": parse_results(output, solution),
-                                  "chars": chars, "stats": stats, "xp": learn.GAME_XP[mode] if passed else 0})
-            if action == "/api/game/finish":  # a whole Bug Squash or Speed Run round: bonus XP and best time
-                track, mode, seconds = body.get("track"), body.get("mode"), body.get("seconds")
-                if track not in learn.tracks() or mode not in ("bug", "speed") \
-                        or not isinstance(seconds, (int, float)) or not 0 < seconds < 86_400:
+                return self.send(play_robot(body["track"], body.get("level"), code))
+            if action == "/api/game/score":  # a finished Bug Invaders game or Code Racer race
+                game, score = body.get("game"), body.get("score")
+                limit = {"invaders": 1_000_000, "racer": 400}.get(game)  # nobody types faster than ~300 WPM
+                if not limit or not isinstance(score, int) or not 0 <= score <= limit:
                     return self.send({"error": "bad game request"}, 400)
-                stats = learn.game_record(track, learn.ROUND_XP, mode, round(seconds, 1))
+                xp = game_xp(game, score)
+                stats = learn.game_record(body["track"], xp, game, score)
                 cloud.sync_in_background()
-                return self.send({"stats": stats, "xp": learn.ROUND_XP})
+                return self.send({"xp": xp, "stats": stats})
             if action == "/api/settings":
                 before = learn.load_settings()["share_code"]
                 if learn.save_settings(body)["share_code"] != before:

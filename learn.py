@@ -160,54 +160,58 @@ def prepare(track, m):
 
 def run_tests(track, m):
     """Return (passed, output) from running the mission's tests on the learner's file."""
-    return _run(track, next(m["dir"].glob("test.*")), WORK / track / m["file"], WORK / track, timeout=60)
-
-
-def _run(track, test, solution, cwd, timeout):
-    cmd = [arg.format(python=sys.executable, track=TRACKS / track, test=test, solution=solution)
-           for arg in track_cfg(track)["run"]]
+    ws = WORK / track
+    paths = dict(python=sys.executable, track=TRACKS / track, test=next(m["dir"].glob("test.*")),
+                 solution=ws / m["file"])
+    cmd = [arg.format(**paths) for arg in track_cfg(track)["run"]]
     try:
-        r = subprocess.run(cmd, cwd=cwd, timeout=timeout, capture_output=True, encoding="utf-8",
-                           errors="replace", env={**os.environ, "PYTHONIOENCODING": "utf-8"})
+        r = subprocess.run(cmd, cwd=ws, timeout=60, capture_output=True, encoding="utf-8", errors="replace",
+                           env={**os.environ, "PYTHONIOENCODING": "utf-8"})
     except subprocess.TimeoutExpired:
-        return False, f"Your code ran for over {timeout} seconds. Infinite loop?"
+        return False, "Your code ran for over 60 seconds. Infinite loop?"
     return r.returncode == 0, r.stdout + r.stderr
 
 
 # ---------- games ----------
-GAME_XP = {"bug": 10, "speed": 10, "golf": 15}  # per challenge solved
-ROUND_XP = 20                                   # bonus for finishing a Bug Squash or Speed Run round
-
-
 def games(track):
-    """The course's game challenges, from games/*.game: `key: value` lines, a blank line, the task,
-    then `=== starter`, `=== test` and optionally `=== broken` (Bug Squash) sections. `golf: N` is the par."""
-    out = []
-    for f in sorted((TRACKS / track / "games").glob("*.game")):
-        head, *sections = re.split(r"^=== (\w+)\n", f.read_text(encoding="utf-8"), flags=re.M)
-        meta, _, task = head.partition("\n\n")
-        g = dict(line.split(": ", 1) for line in meta.splitlines())
-        out.append({**g, "id": f.stem, "task": task.strip(), "golf": int(g["golf"]) if "golf" in g else None,
-                    **dict(zip(sections[::2], sections[1::2]))})
-    return out
+    """The course's games, from its games/ folder (each one optional): robot.json (Robot Maze levels),
+    invaders.json (lines of code for Bug Invaders; buggy ones say why) and racer.txt (Code Racer snippets, split by ---)."""
+    folder = TRACKS / track / "games"
+    read = lambda name: (folder / name).read_text(encoding="utf-8") if (folder / name).exists() else ""
+    return {"robot": json.loads(read("robot.json") or "[]"), "invaders": json.loads(read("invaders.json") or "[]"),
+            "racer": [s.strip("\n") for s in re.split(r"^---$", read("racer.txt"), flags=re.M) if s.strip()]}
 
 
-def run_game(track, g, code):
-    """Test code typed into a game. Returns (passed, output, the file the code was saved to)."""
+def run_robot(track, level, code):
+    """Run code typed into Robot Maze on every map of a level, with the course's robot runner."""
     ws = WORK / track / "games"
     ws.mkdir(parents=True, exist_ok=True)
-    test, solution = ws / "game_test.py", ws / "game.py"
-    test.write_text(g["test"], encoding="utf-8")
+    level_file, solution = ws / "robot_level.json", ws / "my_robot.py"
+    level_file.write_text(json.dumps(level), encoding="utf-8")
     solution.write_text(code, encoding="utf-8")
-    return (*_run(track, test, solution, ws, timeout=10), solution)
+    cmd = [arg.format(python=sys.executable, track=TRACKS / track, level=level_file, solution=solution)
+           for arg in track_cfg(track)["robot"]]
+    try:
+        r = subprocess.run(cmd, cwd=ws, timeout=10, capture_output=True, encoding="utf-8", errors="replace",
+                           env={**os.environ, "PYTHONIOENCODING": "utf-8"})
+        return json.loads(r.stdout.strip().splitlines()[-1])
+    except subprocess.TimeoutExpired:
+        return {"maps": [], "problem": "Your code ran for over 10 seconds. Infinite loop?"}
+    except (ValueError, IndexError):
+        return {"maps": [], "problem": (r.stdout + r.stderr)[-2000:] or "The robot didn't start."}
+
+
+def code_lines(code):
+    """Lines that do something (blank lines and comments don't count toward par)."""
+    return sum(1 for line in code.splitlines() if line.strip() and not line.strip().startswith("#"))
 
 
 def game_record(track, xp, key=None, score=None):
-    """Add game XP and keep your best (lowest) score under `key`. Returns this course's game stats."""
+    """Add game XP and keep your best (highest) score under `key`. Returns this course's game stats."""
     progress = load_progress()
     stats = progress.setdefault("_games", {}).setdefault(track, {"xp": 0, "best": {}})
     stats["xp"] += xp
-    new_best = key is not None and (key not in stats["best"] or score < stats["best"][key])
+    new_best = key is not None and (key not in stats["best"] or score > stats["best"][key])
     if new_best:
         stats["best"][key] = score
     save_progress(progress)

@@ -1,0 +1,47 @@
+print("Hello, world!")
+---
+name = "Ada"
+print(f"Hi {name}!")
+---
+for i in range(3):
+    print(i)
+---
+total = 0
+for n in [4, 8, 15]:
+    total += n
+---
+if score > 100:
+    print("You win!")
+else:
+    print("Try again")
+---
+def double(n):
+    return n * 2
+---
+words = "the quick brown fox".split()
+print(len(words))
+---
+count = 10
+while count > 0:
+    count -= 1
+---
+pets = {"cat": 2, "dog": 1}
+for pet, n in pets.items():
+    print(pet, n)
+---
+squares = [n * n for n in range(5)]
+---
+def greet(name="friend"):
+    return f"Hello, {name}!"
+---
+with open("notes.txt") as f:
+    lines = f.readlines()
+---
+try:
+    age = int(input("Age? "))
+except ValueError:
+    print("Numbers only!")
+---
+class Robot:
+    def __init__(self, name):
+        self.name = name
