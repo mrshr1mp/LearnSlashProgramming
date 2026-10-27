@@ -93,9 +93,10 @@ fn main() {
             if let Ok(child) = started {
                 *app.state::<Server>().0.lock().unwrap() = Some(child);
             }
+            let tries = if ok { 150 } else { 5 };
             std::thread::spawn(move || {
                 // wait for Python to answer (usually under a second), then show the app
-                for _ in 0..if ok { 150 } else { 5 } {
+                for _ in 0..tries {
                     if TcpStream::connect(("127.0.0.1", PORT)).is_ok() {
                         let _ = window.navigate(Url::parse(&format!("http://127.0.0.1:{PORT}/")).unwrap());
                         return;

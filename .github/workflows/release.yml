@@ -88,9 +88,21 @@ jobs:
 
       - name: Build (test only, no update signing)
         if: env.RELEASE != 'true'
-        uses: tauri-apps/tauri-action@v0
-        with:
-          args: --config {"bundle":{"createUpdaterArtifacts":false}}
+        shell: bash
+        run: |
+          set -o pipefail
+          npm run tauri build -- --config '{"bundle":{"createUpdaterArtifacts":false}}' 2>&1 | tee build.log
+
+      # GitHub only shows full logs to signed-in people; annotations are public, so put the errors there
+      - name: Show why the build failed
+        if: failure()
+        shell: bash
+        run: |
+          [ -f build.log ] || npm run tauri build -- --config '{"bundle":{"createUpdaterArtifacts":false}}' > build.log 2>&1 || true
+          grep -E -A14 '^(error|warning: unused)|error\[|Error |failed to' build.log | head -160 > why.txt || true
+          [ -s why.txt ] || tail -80 build.log > why.txt
+          echo "::error title=Why the build failed::$(sed -e 's/%/%25/g' -e 's/\r//g' why.txt | sed ':a;N;$!ba;s/\n/%0A/g')"
+
       - name: Keep the test build
         if: env.RELEASE != 'true'
         uses: actions/upload-artifact@v4
