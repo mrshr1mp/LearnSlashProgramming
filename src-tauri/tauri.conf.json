@@ -38,7 +38,7 @@
   },
   "plugins": {
     "updater": {
-      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEM4MTQzNjcwRjFDMEFEMzgKUldRNHJjRHhjRFlVeUFCSU9vUVFXS1l3V0RuRzZobVEvT1lSWVBFeXR0UXplTkd2MXUxTkdVMG0K",
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDIxQzYyMDdBRTc3MjgyOUUKUldTZWduTG5laURHSWUzb1lveGxFaHRWU282d3l1cnpkdW5HbUVHcFByTmFuSVNWZDhRVGhyRHQK",
       "endpoints": [
         "https://github.com/mrshr1mp/LearnSlashProgramming/releases/latest/download/latest.json"
       ],
