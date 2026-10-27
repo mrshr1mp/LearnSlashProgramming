@@ -1,0 +1,18 @@
+title: Initials
+golf: 55
+
+Write `initials(name)` that returns the first letter of each name, each followed by a dot.
+`initials("Ada Lovelace")` gives `"A.L."`.
+=== starter
+def initials(name):
+    ...
+=== broken
+def initials(name):
+    return ".".join(word[0] for word in name.split())
+=== test
+from harness import eq
+
+
+def test_initials(sol):
+    eq(sol.initials("Ada Lovelace"), "A.L.", 'initials("Ada Lovelace")')
+    eq(sol.initials("Guido van Rossum"), "G.v.R.", 'initials("Guido van Rossum")')

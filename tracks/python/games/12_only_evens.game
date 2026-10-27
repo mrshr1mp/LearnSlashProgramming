@@ -1,0 +1,22 @@
+title: Evens only
+golf: 45
+
+Write `only_evens(nums)` that returns a new list with just the even numbers.
+`only_evens([1, 2, 3, 4])` gives `[2, 4]`.
+=== starter
+def only_evens(nums):
+    ...
+=== broken
+def only_evens(nums):
+    result = []
+    for n in nums:
+        if n % 2:
+            result.append(n)
+    return result
+=== test
+from harness import eq
+
+
+def test_only_evens(sol):
+    eq(sol.only_evens([1, 2, 3, 4]), [2, 4], "only_evens([1, 2, 3, 4])")
+    eq(sol.only_evens([7, 9]), [], "only_evens([7, 9])")

@@ -261,3 +261,21 @@ revoke execute on function private.require_publisher(), public.begin_publish(tex
   public.publish_course_files(text, jsonb), public.finish_publish(text) from public, anon;
 grant execute on function private.require_publisher(), public.begin_publish(text, jsonb),
   public.publish_course_files(text, jsonb), public.finish_publish(text) to authenticated;
+
+-- ===== games =====
+-- one row per person per course: XP earned in games, and best scores ({"bug": seconds, "speed": seconds, "golf/<id>": chars})
+create table public.game_stats (
+  user_id uuid not null default auth.uid() references public.profiles(id) on delete cascade,
+  track text not null check (track ~ '^[a-z0-9_-]{1,40}$'),
+  xp int not null check (xp between 0 and 10000000),
+  best jsonb not null default '{}' check (jsonb_typeof(best) = 'object' and pg_column_size(best) < 8000),
+  primary key (user_id, track)
+);
+revoke all on public.game_stats from anon;
+alter table public.game_stats enable row level security;
+create policy "read own or friends" on public.game_stats for select to authenticated
+  using (user_id = (select auth.uid()) or private.is_friend(user_id));
+create policy "insert own" on public.game_stats for insert to authenticated with check (user_id = (select auth.uid()));
+create policy "update own" on public.game_stats for update to authenticated
+  using (user_id = (select auth.uid())) with check (user_id = (select auth.uid()));
+create policy "delete own" on public.game_stats for delete to authenticated using (user_id = (select auth.uid()));

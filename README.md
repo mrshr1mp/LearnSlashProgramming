@@ -49,6 +49,15 @@ already started were added for you.)
 Publishing (only accounts listed as publishers in the database can do this): sign in to the app, then run
 `python tools/publish_course.py <course id>` to upload `tracks/<course id>/`. Every publish bumps the version.
 
+## Games
+The **Games** tab has quick games for each course you've added: **Bug Squash** (fix 3 broken snippets
+against the clock), **Speed Run** (5 tiny challenges from scratch) and **Code Golf** (pass the tests in as
+few characters as you can). You type code right in the app, and the same tests as missions check it.
+Every win gives XP, and friends can see your game XP and golf scores.
+
+A course's games live in `tracks/<course>/games/*.game`: a `title:` line (and `golf: <par>` for Code Golf),
+a blank line, the task, then `=== starter`, `=== broken` and `=== test` sections.
+
 ## How it works
 Every mission gives you a brief (`mission.md`) and a file to work in (`workspace/python/kit/...`).
 You write real code in a real editor. `check` runs hidden tests against it and tells you exactly what's wrong.

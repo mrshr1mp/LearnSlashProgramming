@@ -1,0 +1,19 @@
+title: Average
+golf: 38
+
+Write `average(nums)` that returns the average of a list of numbers.
+An empty list should give `0` (not a crash!).
+=== starter
+def average(nums):
+    ...
+=== broken
+def average(nums):
+    return sum(nums) / len(nums)
+=== test
+from harness import eq
+
+
+def test_average(sol):
+    eq(sol.average([2, 4, 6]), 4, "average([2, 4, 6])")
+    eq(sol.average([1, 2]), 1.5, "average([1, 2])")
+    eq(sol.average([]), 0, "average([])")

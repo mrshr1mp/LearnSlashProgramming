@@ -1,0 +1,18 @@
+title: Even or not
+golf: 24
+
+Write `is_even(n)` that returns `True` if n is even and `False` if it's odd.
+=== starter
+def is_even(n):
+    ...
+=== broken
+def is_even(n):
+    return n % 2 == 1
+=== test
+from harness import eq
+
+
+def test_is_even(sol):
+    eq(sol.is_even(4), True, "is_even(4)")
+    eq(sol.is_even(7), False, "is_even(7)")
+    eq(sol.is_even(0), True, "is_even(0)")

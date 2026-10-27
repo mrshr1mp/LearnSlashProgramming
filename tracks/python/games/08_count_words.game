@@ -1,0 +1,20 @@
+title: Word tally
+
+Write `count_words(text)` that returns a dict of how many times each word appears.
+`count_words("a b a")` gives `{"a": 2, "b": 1}`.
+=== starter
+def count_words(text):
+    ...
+=== broken
+def count_words(text):
+    counts = {}
+    for word in text.split():
+        counts[word] += 1
+    return counts
+=== test
+from harness import eq
+
+
+def test_count_words(sol):
+    eq(sol.count_words("a b a"), {"a": 2, "b": 1}, 'count_words("a b a")')
+    eq(sol.count_words(""), {}, 'count_words("")')

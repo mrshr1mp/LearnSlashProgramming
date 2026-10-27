@@ -78,17 +78,18 @@ def state(track):
             "errors": cfg.get("errors", {})}
 
 
-def course_info(track, s):
+def course_info(track, s, game_xp=0):
     cfg = learn.track_cfg(track)
     return {"track": track, "name": s["name"], "logo": cfg.get("logo", ""),
             "description": cfg.get("description", ""), "xp": s["xp"], "rank": s["rank"], "rank_xp": s["rank_xp"],
-            "next": s["next"], "missions": [mission_info(track, m) for m in s["missions"]]}
+            "next": s["next"], "missions": [mission_info(track, m) for m in s["missions"]], "game_xp": game_xp}
 
 
 def overview():
     """Every course's progress, plus a dated log of completed missions."""
     progress = learn.load_progress()
-    courses = [course_info(track, learn.summary(track)) for track in learn.tracks()]
+    games = progress.get("_games", {})
+    courses = [course_info(track, learn.summary(track), games.get(track, {}).get("xp", 0)) for track in learn.tracks()]
     return {"courses": courses, "history": learn.history(progress), "checks": progress.get("_checks", {})}
 
 
@@ -100,9 +101,10 @@ def friend_overview(username):
         finished.setdefault(c["track"], []).append(c["mission_id"])
     readable = {(r["track"], r["mission_id"]) for r in p["readable"]}
     mine = learn.load_progress()
+    game_xp = {g["track"]: g["xp"] for g in p["games"]}
     courses = []
     for track in learn.tracks():
-        info = course_info(track, learn.summary(track, finished.get(track, [])))
+        info = course_info(track, learn.summary(track, finished.get(track, [])), game_xp.get(track, 0))
         for m in info["missions"]:
             m["code"] = (track, m["id"]) in readable
             m["mine"] = m["id"] in mine.get(track, [])  # so the app can say "finish it" vs "not shared"
@@ -144,7 +146,8 @@ def friends_view(details=True):
         uid = friend.pop("id")
         done = [c for c in f["completions"] if c["user_id"] == uid and c["mission_id"] in missions.get(c["track"], {})]
         days = {c["completed_on"] for c in done} | {a["day"] for a in f["activity"] if a["user_id"] == uid}
-        friend.update(xp=sum(c["xp"] for c in done), done=len(done), streak=current_streak(days),
+        game_xp = sum(g["xp"] for g in f["games"] if g["user_id"] == uid)
+        friend.update(xp=sum(c["xp"] for c in done) + game_xp, done=len(done), streak=current_streak(days),
                       week_xp=sum(c["xp"] for c in done if c["completed_on"] >= week_start),
                       last_active=max(days) if days else None, courses=[])
         for track in learn.tracks():
@@ -160,6 +163,25 @@ def friends_view(details=True):
                   for h in learn.history(progress) if h["track"] == track and h["id"] == m["id"] and h["date"] >= week_start)
     return {"friends": f["friends"], "incoming": f["incoming"], "outgoing": f["outgoing"],
             "feed": sorted(feed, key=lambda e: e["date"], reverse=True)[:40], "my_week_xp": my_week}
+
+
+def games_view(track):
+    """A course's game challenges (without their tests), your stats, and friends' best scores."""
+    cfg = learn.track_cfg(track)
+    try:
+        friends = cloud.friend_games(track)
+    except cloud.CloudError:
+        friends = []  # offline: you can still play
+    return {"track": track, "name": cfg["name"], "logo": cfg.get("logo", ""), "errors": cfg.get("errors", {}),
+            "games": [{k: v for k, v in g.items() if k != "test"} for g in learn.games(track)],
+            "stats": learn.load_progress().get("_games", {}).get(track, {"xp": 0, "best": {}}), "friends": friends}
+
+
+def find_game(track, game_id):
+    g = next((g for g in learn.games(track) if g["id"] == game_id), None) if track in learn.tracks() else None
+    if not g:
+        raise ValueError("That game isn't in this course")
+    return g
 
 
 def me():
@@ -231,6 +253,10 @@ class Handler(BaseHTTPRequestHandler):
                 return self.send(me())
             if url.path == "/api/market":
                 return self.send(market())
+            if url.path == "/api/games":
+                if q.get("track") not in learn.tracks():
+                    return self.send({"error": "unknown track"}, 400)
+                return self.send(games_view(q["track"]))
             if url.path == "/api/ping":  # the open window checks in so we know it's still there
                 return self.send({"update": updates.status["available"]})
             if url.path == "/api/friends":  # ?light=1: just requests, for the sidebar badge
@@ -275,6 +301,28 @@ class Handler(BaseHTTPRequestHandler):
                 else:
                     learn.remove_course(course_id)
                 return self.send(market())
+            if action == "/api/game/check":  # test code typed into a game; solving one gives XP
+                track, mode, code = body.get("track"), body.get("mode"), body.get("code")
+                g = find_game(track, body.get("game"))
+                if mode not in learn.GAME_XP or not isinstance(code, str) or len(code) > 20_000:
+                    return self.send({"error": "bad game request"}, 400)
+                passed, output, solution = learn.run_game(track, g, code)
+                chars = len(code.strip())
+                stats = None
+                if passed:
+                    golf = mode == "golf" and g["golf"]
+                    stats = learn.game_record(track, learn.GAME_XP[mode], f"golf/{g['id']}" if golf else None, chars)
+                    cloud.sync_in_background()
+                return self.send({"passed": passed, "output": output, "results": parse_results(output, solution),
+                                  "chars": chars, "stats": stats, "xp": learn.GAME_XP[mode] if passed else 0})
+            if action == "/api/game/finish":  # a whole Bug Squash or Speed Run round: bonus XP and best time
+                track, mode, seconds = body.get("track"), body.get("mode"), body.get("seconds")
+                if track not in learn.tracks() or mode not in ("bug", "speed") \
+                        or not isinstance(seconds, (int, float)) or not 0 < seconds < 86_400:
+                    return self.send({"error": "bad game request"}, 400)
+                stats = learn.game_record(track, learn.ROUND_XP, mode, round(seconds, 1))
+                cloud.sync_in_background()
+                return self.send({"stats": stats, "xp": learn.ROUND_XP})
             if action == "/api/settings":
                 before = learn.load_settings()["share_code"]
                 if learn.save_settings(body)["share_code"] != before:

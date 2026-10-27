@@ -160,16 +160,58 @@ def prepare(track, m):
 
 def run_tests(track, m):
     """Return (passed, output) from running the mission's tests on the learner's file."""
-    ws = WORK / track
-    paths = dict(python=sys.executable, track=TRACKS / track, test=next(m["dir"].glob("test.*")),
-                 solution=ws / m["file"])
-    cmd = [arg.format(**paths) for arg in track_cfg(track)["run"]]
+    return _run(track, next(m["dir"].glob("test.*")), WORK / track / m["file"], WORK / track, timeout=60)
+
+
+def _run(track, test, solution, cwd, timeout):
+    cmd = [arg.format(python=sys.executable, track=TRACKS / track, test=test, solution=solution)
+           for arg in track_cfg(track)["run"]]
     try:
-        r = subprocess.run(cmd, cwd=ws, timeout=60, capture_output=True, encoding="utf-8", errors="replace",
-                           env={**os.environ, "PYTHONIOENCODING": "utf-8"})
+        r = subprocess.run(cmd, cwd=cwd, timeout=timeout, capture_output=True, encoding="utf-8",
+                           errors="replace", env={**os.environ, "PYTHONIOENCODING": "utf-8"})
     except subprocess.TimeoutExpired:
-        return False, "Your code ran for over 60 seconds. Infinite loop?"
+        return False, f"Your code ran for over {timeout} seconds. Infinite loop?"
     return r.returncode == 0, r.stdout + r.stderr
+
+
+# ---------- games ----------
+GAME_XP = {"bug": 10, "speed": 10, "golf": 15}  # per challenge solved
+ROUND_XP = 20                                   # bonus for finishing a Bug Squash or Speed Run round
+
+
+def games(track):
+    """The course's game challenges, from games/*.game: `key: value` lines, a blank line, the task,
+    then `=== starter`, `=== test` and optionally `=== broken` (Bug Squash) sections. `golf: N` is the par."""
+    out = []
+    for f in sorted((TRACKS / track / "games").glob("*.game")):
+        head, *sections = re.split(r"^=== (\w+)\n", f.read_text(encoding="utf-8"), flags=re.M)
+        meta, _, task = head.partition("\n\n")
+        g = dict(line.split(": ", 1) for line in meta.splitlines())
+        out.append({**g, "id": f.stem, "task": task.strip(), "golf": int(g["golf"]) if "golf" in g else None,
+                    **dict(zip(sections[::2], sections[1::2]))})
+    return out
+
+
+def run_game(track, g, code):
+    """Test code typed into a game. Returns (passed, output, the file the code was saved to)."""
+    ws = WORK / track / "games"
+    ws.mkdir(parents=True, exist_ok=True)
+    test, solution = ws / "game_test.py", ws / "game.py"
+    test.write_text(g["test"], encoding="utf-8")
+    solution.write_text(code, encoding="utf-8")
+    return (*_run(track, test, solution, ws, timeout=10), solution)
+
+
+def game_record(track, xp, key=None, score=None):
+    """Add game XP and keep your best (lowest) score under `key`. Returns this course's game stats."""
+    progress = load_progress()
+    stats = progress.setdefault("_games", {}).setdefault(track, {"xp": 0, "best": {}})
+    stats["xp"] += xp
+    new_best = key is not None and (key not in stats["best"] or score < stats["best"][key])
+    if new_best:
+        stats["best"][key] = score
+    save_progress(progress)
+    return {**stats, "new_best": new_best}
 
 
 def log_check():

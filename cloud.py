@@ -194,8 +194,10 @@ def sync():
         solutions = []
         _rest("DELETE", f"solutions?user_id=eq.{s['user_id']}", prefer="return=minimal")
     activity = [{"user_id": s["user_id"], "day": day, "checks": n} for day, n in progress.get("_checks", {}).items()]
+    games = [{"user_id": s["user_id"], "track": track, "xp": g["xp"], "best": g["best"]}
+             for track, g in progress.get("_games", {}).items()]
     upsert = "resolution=merge-duplicates,return=minimal"
-    for table, rows in [("completions", completions), ("solutions", solutions), ("activity", activity)]:
+    for table, rows in [("completions", completions), ("solutions", solutions), ("activity", activity), ("game_stats", games)]:
         if rows:  # completions first: code can only be uploaded for finished missions
             _rest("POST", table, rows, upsert)
     status.update(synced_at=time.time(), error=None)
@@ -244,6 +246,7 @@ def friends(details=True):
         since = (date.today() - timedelta(days=120)).isoformat()
         queries["completions"] = f"completions?select=user_id,track,mission_id,xp,completed_on&user_id=in.{_ids_in(accepted)}"
         queries["activity"] = f"activity?select=user_id,day&user_id=in.{_ids_in(accepted)}&day=gte.{since}"
+        queries["games"] = f"game_stats?select=user_id,xp&user_id=in.{_ids_in(accepted)}"
     answers = dict(zip(queries, _parallel(*queries.values()))) if queries else {}
     people = {p["id"]: p for p in answers.get("people", [])}
     person = lambda i: {"username": people[i]["username"], "avatar": people[i]["avatar"]}
@@ -252,7 +255,15 @@ def friends(details=True):
         "incoming": [person(r["requester"]) for r in rows if r["status"] == "pending" and r["addressee"] == me and r["requester"] in people],
         "outgoing": [person(r["addressee"]) for r in rows if r["status"] == "pending" and r["requester"] == me and r["addressee"] in people],
         "completions": answers.get("completions", []), "activity": answers.get("activity", []),
+        "games": answers.get("games", []),
     }
+
+
+def friend_games(track):
+    """Your friends' best game scores in a course (the database only shows accepted friends' rows)."""
+    rows = _rest("GET", f"game_stats?select=best,profiles(username,avatar)&track=eq.{quote(track)}"
+                        f"&user_id=neq.{session()['user_id']}")
+    return [{"username": r["profiles"]["username"], "avatar": r["profiles"]["avatar"], "best": r["best"]} for r in rows]
 
 
 def add_friend(username):
@@ -283,11 +294,13 @@ def profile(username):
     """A friend's finished missions and activity. The database only answers for accepted friends."""
     p = _person(username)
     uid = p["id"]
-    completions, activity, readable = _parallel(
+    completions, activity, readable, games = _parallel(
         f"completions?select=track,mission_id,completed_on&user_id=eq.{uid}",
         f"activity?select=day,checks&user_id=eq.{uid}",
-        f"solutions?select=track,mission_id&user_id=eq.{uid}")  # only missions whose code you're allowed to see
-    return {"avatar": p["avatar"], "joined": p["created_at"], "completions": completions, "activity": activity, "readable": readable}
+        f"solutions?select=track,mission_id&user_id=eq.{uid}",  # only missions whose code you're allowed to see
+        f"game_stats?select=track,xp&user_id=eq.{uid}")
+    return {"avatar": p["avatar"], "joined": p["created_at"], "completions": completions, "activity": activity,
+            "readable": readable, "games": games}
 
 
 def code(username, track, mission_id):

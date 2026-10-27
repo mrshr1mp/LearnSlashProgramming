@@ -1,0 +1,26 @@
+title: FizzBuzz
+golf: 60
+
+Write `fizzbuzz(n)` that returns "Fizz" if n divides by 3, "Buzz" if it divides by 5,
+"FizzBuzz" if it divides by both, and otherwise the number as a string (`"7"`).
+=== starter
+def fizzbuzz(n):
+    ...
+=== broken
+def fizzbuzz(n):
+    if n % 3 == 0:
+        return "Fizz"
+    elif n % 5 == 0:
+        return "Buzz"
+    elif n % 15 == 0:
+        return "FizzBuzz"
+    return str(n)
+=== test
+from harness import eq
+
+
+def test_fizzbuzz(sol):
+    eq(sol.fizzbuzz(9), "Fizz", "fizzbuzz(9)")
+    eq(sol.fizzbuzz(10), "Buzz", "fizzbuzz(10)")
+    eq(sol.fizzbuzz(30), "FizzBuzz", "fizzbuzz(30)")
+    eq(sol.fizzbuzz(7), "7", "fizzbuzz(7)")

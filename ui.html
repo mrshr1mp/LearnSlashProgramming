@@ -268,7 +268,43 @@
   .level .bar div { height: 100%; border-radius: 99px; background: linear-gradient(90deg, var(--gold), var(--gold-hi)); }
   .lv-chip { font: 700 11.5px var(--mono); color: var(--gold-hi); padding: 2px 7px; border-radius: 6px;
              background: color-mix(in srgb, var(--gold) 14%, transparent); white-space: nowrap; }
-  .win .levelup { margin: 8px auto 4px; padding: 9px 18px; border-radius: 12px; font-weight: 700; display: inline-block;
+  /* games */
+  .gold-text { color: var(--gold-hi); }
+  .game-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 14px; }
+  .game-card { display: flex; flex-direction: column; gap: 6px; transition: border-color .15s; }
+  .game-card:hover { border-color: var(--hover-line); }
+  .game-card h3 { margin: 6px 0 0; font: 700 20px var(--display); }
+  .game-card .sub { margin: 0; flex: 1; }
+  .gc-icon { width: 48px; height: 48px; border-radius: 12px; display: grid; place-items: center; color: var(--accent-hi);
+             background: color-mix(in srgb, var(--accent) 14%, transparent); }
+  .gc-foot { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 12px; color: var(--muted); font-size: 13.5px; }
+  .gc-foot > span:first-child { display: flex; align-items: center; gap: 6px; }
+  .holes { padding: 6px 0; }
+  .hole { display: flex; align-items: center; gap: 14px; padding: 11px 20px; border-bottom: 1px solid var(--line); }
+  .hole:last-child { border-bottom: 0; }
+  .hole:hover { background: var(--surface-2); }
+  .hole .h-title { flex: 1; font-weight: 600; }
+  .hole .h-col { width: 120px; font: 13px var(--mono); color: var(--muted); display: flex; align-items: center; gap: 6px; }
+  .hole .h-col.under { color: var(--gold-hi); }
+  .hole .h-col.friend { width: 170px; }
+  .hole .avatar { width: 22px; height: 22px; font-size: 11px; }
+  @media (max-width: 760px) { .hole .h-col.friend { display: none; } .hole .h-col { width: auto; } }
+  .game-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; margin-bottom: 16px; }
+  .game-head .page-title { margin-bottom: 0; }
+  .g-big { text-align: right; }
+  .g-big span { display: block; font: 700 34px/1 var(--mono); color: var(--gold-hi); }
+  .g-big small { color: var(--faint); font-size: 12px; text-transform: uppercase; letter-spacing: 1.5px; }
+  .g-task p { margin: 0 0 6px; } .g-task p:last-child { margin: 0; }
+  .bug-note { color: var(--accent-hi); font-weight: 700; display: flex; align-items: center; gap: 6px; }
+  .code-input { display: block; width: 100%; min-height: 200px; margin: 14px 0; padding: 14px 16px; resize: vertical; tab-size: 4;
+                font: 14.5px/1.6 var(--mono); color: var(--text); background: var(--surface-2); border: 1px solid var(--line); border-radius: 12px; outline: none; }
+  .code-input:focus { border-color: var(--accent-hi); }
+  .game-over { text-align: center; padding: 40px 24px; }
+  .game-over .kicker { letter-spacing: 5px; font: 700 13px var(--mono); color: var(--gold); }
+  .game-over .go-time { font: 800 64px/1.1 var(--mono); margin: 10px 0 4px; }
+  .game-over .gain { font: 800 40px var(--display); color: var(--gold-hi); margin: 10px 0; }
+  .game-over .btns { display: flex; gap: 10px; justify-content: center; margin-top: 18px; flex-wrap: wrap; }
+  .game-over .levelup, .win .levelup { margin: 8px auto 4px; padding: 9px 18px; border-radius: 12px; font-weight: 700; display: inline-block;
                   color: var(--gold-hi); border: 1px solid var(--gold); background: color-mix(in srgb, var(--gold) 12%, transparent); }
 
   /* profile */
@@ -535,6 +571,7 @@
     <nav class="nav">
       <a href="#/dashboard" data-page="dashboard"><span class="ni"><i data-lucide="house"></i></span>Dashboard</a>
       <a href="#/courses" data-page="courses"><span class="ni"><i data-lucide="book-open"></i></span>My courses</a>
+      <a href="#/games" data-page="games"><span class="ni"><i data-lucide="gamepad-2"></i></span>Games</a>
       <a href="#/market" data-page="market"><span class="ni"><i data-lucide="store"></i></span>Marketplace</a>
       <a href="#/friends" data-page="friends"><span class="ni"><i data-lucide="users"></i></span>Friends<span class="count" id="req-count" hidden></span></a>
       <a href="#/achievements" data-page="achievements"><span class="ni"><i data-lucide="trophy"></i></span>Achievements</a>
@@ -618,7 +655,7 @@ function chapters(missions) {
   return groups;
 }
 const doneCount = ms => ms.filter(m => m.status === "done").length;
-const totalXp = ov => ov.courses.reduce((s, c) => s + c.xp, 0);
+const totalXp = ov => ov.courses.reduce((s, c) => s + c.xp + (c.game_xp || 0), 0);  // missions + games
 
 // Levels come from total XP across every course. Each level costs 25 XP more than the last
 // (level 2 at 100 XP, level 3 at 225, ...), so finishing Python lands you around level 14.
@@ -690,6 +727,7 @@ function parseRoute() {
   const parts = location.hash.replace(/^#\/?/, "").split("/").filter(Boolean);
   if (!parts.length || parts[0] === "dashboard") return { page: "dashboard" };
   if (parts[0] === "friends") return { page: "friends", tab: parts[1] || "list" };
+  if (parts[0] === "games") return { page: "games", track: decodeURIComponent(parts[1] || ""), mode: parts[2], hole: parts[3] };
   if (["courses", "achievements", "settings", "profile", "market"].includes(parts[0])) return { page: parts[0] };
   if (parts[0] === "account") return { page: "profile" };  // old links
   if (parts[0] === "u") return { page: "user", name: decodeURIComponent(parts[1] || "") };
@@ -742,6 +780,7 @@ setInterval(async () => {
 
 async function render(keepScroll = false) {
   route = parseRoute();
+  stopGame();
   const navPage = { course: "courses", user: "friends" }[route.page] || route.page;
   document.querySelectorAll(".nav a").forEach(a => a.classList.toggle("active", a.dataset.page === navPage));
   try {
@@ -758,10 +797,10 @@ async function render(keepScroll = false) {
       $("#req-count").hidden = !f.incoming.length;
       $("#req-count").textContent = f.incoming.length;
     }).catch(() => {});
-    if (["friends", "profile", "user", "settings", "market"].includes(route.page)) {
+    if (["friends", "profile", "user", "settings", "market", "games"].includes(route.page)) {
       $("#course-side").hidden = true;
       $("#view").innerHTML = `<div class="eyebrow">Loading…</div>`;
-      $("#view").innerHTML = await { friends: friendsPage, profile: profilePage, user: userPage, settings: settingsPage, market: marketPage }[route.page]();
+      $("#view").innerHTML = await { friends: friendsPage, profile: profilePage, user: userPage, settings: settingsPage, market: marketPage, games: gamesPage }[route.page]();
     } else if (route.page === "course") {
       if (S?.track !== route.track) lastCheck = null;
       S = await api(`/api/state?track=${encodeURIComponent(route.track)}`);
@@ -1136,6 +1175,164 @@ async function friendsPage() {
     ${body}`;
 }
 
+/* ---------- games ---------- */
+// Each course brings its own challenges (games/*.game). Your code is tested by the same harness as missions.
+const GAME_MODES = {
+  bug: { name: "Bug Squash", icon: "bug", count: 3, blurb: "Three pieces of broken code. Fix each one as fast as you can." },
+  speed: { name: "Speed Run", icon: "zap", count: 5, blurb: "Five quick challenges, written from scratch. Beat your best time." },
+  golf: { name: "Code Golf", icon: "flag", blurb: "Solve each hole in as few characters as you can. Get under par." },
+};
+let G = null;  // the game being played: { D, mode, queue, i, t0, penalty, solved, xp, timer }
+const clock = s => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, "0")}`;
+const shuffle = a => a.map(x => [Math.random(), x]).sort((p, q) => p[0] - q[0]).map(p => p[1]);
+const elapsed = () => (Date.now() - G.t0) / 1000 + G.penalty;
+const taskHtml = md => window.marked ? marked.parse(md) : `<p>${esc(md)}</p>`;
+function stopGame() { clearInterval(G?.timer); G = null; }
+
+async function gamesPage() {
+  const ov = await getOverview();
+  if (!ov.courses.length) return `<div class="eyebrow">Games</div><h1 class="page-title">Games</h1>
+    <div class="card empty-state"><div class="es-icon">${ic("gamepad-2")}</div><h3>No courses yet</h3>
+      <p class="sub">Games come with courses. Add one from the Marketplace, then come back to play.</p>
+      <a class="btn primary" href="#/market">${ic("store")} Browse the Marketplace</a></div>`;
+  const mine = ov.courses.map(c => c.track), saved = store.get("gameCourse");
+  const track = mine.includes(route.track) ? route.track : mine.includes(saved) ? saved : mine[0];
+  store.set("gameCourse", track);
+  const D = await api(`/api/games?track=${encodeURIComponent(track)}`);
+  if (!D.games.length) return gamesHome(D, ov);
+  if (route.mode === "golf") {
+    const hole = D.games.find(g => g.id === route.hole && g.golf);
+    if (!hole) return golfList(D);
+    G = { D, mode: "golf", queue: [hole], i: 0, xp: 0 };
+    return playScreen();
+  }
+  if (route.mode === "bug" || route.mode === "speed") {
+    const pool = D.games.filter(g => route.mode === "speed" || g.broken);
+    G = { D, mode: route.mode, queue: shuffle(pool).slice(0, GAME_MODES[route.mode].count), i: 0, t0: Date.now(), penalty: 0, solved: 0, xp: 0 };
+    G.timer = setInterval(() => { if ($("#g-timer")) $("#g-timer").textContent = clock(elapsed()); }, 250);
+    return playScreen();
+  }
+  return gamesHome(D, ov);
+}
+
+function gamesHome(D, ov) {
+  const best = D.stats.best, holes = D.games.filter(g => g.golf);
+  const under = holes.filter(g => best[`golf/${g.id}`] <= g.golf).length;
+  const card = (mode, stat) => `<a class="card game-card" href="#/games/${D.track}/${mode}">
+      <div class="gc-icon">${ic(GAME_MODES[mode].icon)}</div>
+      <h3>${GAME_MODES[mode].name}</h3><p class="sub">${GAME_MODES[mode].blurb}</p>
+      <div class="gc-foot"><span>${stat}</span><span class="btn primary small">${ic("play")} Play</span></div></a>`;
+  const picker = ov.courses.length > 1 ? `<div class="seg">${ov.courses.map(c =>
+    `<button class="${c.track === D.track ? "on" : ""}" data-act="game-course" data-value="${esc(c.track)}">${esc(c.name)}</button>`).join("")}</div>` : "";
+  return `
+    <div class="friends-head"><div><div class="eyebrow">${logo(D, 14)} ${esc(D.name)}</div><h1 class="page-title">Games</h1></div>${picker}</div>
+    ${D.games.length ? `
+      <p class="lede">Quick games with real code. Every win gives XP: ${D.stats.xp ? `you've earned <b class="gold-text">${D.stats.xp} XP</b> from games so far.` : "play one to start earning."}</p>
+      <div class="game-grid">
+        ${card("bug", best.bug ? `${ic("trophy")} Best ${clock(best.bug)}` : "Not played yet")}
+        ${card("speed", best.speed ? `${ic("trophy")} Best ${clock(best.speed)}` : "Not played yet")}
+        ${card("golf", `${ic("flag")} ${under} of ${holes.length} holes under par`)}
+      </div>
+      <div class="section-title">How XP works</div>
+      <div class="card sub">+10 XP for every bug fixed or challenge solved, +20 for finishing a round, and +15 for every Code Golf hole you pass.</div>`
+    : `<div class="card empty">This course doesn't have any games yet.</div>`}`;
+}
+
+function golfList(D) {
+  const holes = D.games.filter(g => g.golf);
+  const row = (g, i) => {
+    const key = `golf/${g.id}`, mine = D.stats.best[key];
+    const top = D.friends.filter(f => f.best[key]).sort((a, b) => a.best[key] - b.best[key])[0];
+    return `<a class="hole" href="#/games/${D.track}/golf/${g.id}">
+      <span class="dot">${i + 1}</span><span class="h-title">${esc(g.title)}</span>
+      <span class="h-col">Par ${g.golf}</span>
+      <span class="h-col ${mine <= g.golf ? "under" : ""}">${mine ? `You: ${mine}` : "Not played"}</span>
+      <span class="h-col friend">${top ? `${avatar(top.username, top.avatar)} ${esc(top.username)}: ${top.best[key]}` : ""}</span></a>`;
+  };
+  return `
+    <div class="crumbs"><a href="#/games/${D.track}">Games</a> › Code Golf</div>
+    <div class="eyebrow">${ic("flag")} ${esc(D.name)}</div><h1 class="page-title">Code Golf</h1>
+    <p class="lede">Pass the tests with as few characters as you can. Spaces and new lines count too. Par is a good score; beat it if you can.</p>
+    <div class="card holes">${holes.map(row).join("")}</div>
+    ${D.friends.length ? "" : `<p class="sub">Add friends to see their best scores here.</p>`}`;
+}
+
+function playScreen() {
+  const g = G.queue[G.i], M = GAME_MODES[G.mode], golf = G.mode === "golf";
+  const best = G.D.stats.best[`golf/${g.id}`];
+  return `
+    <div class="crumbs"><a href="#/games/${G.D.track}">Games</a> › ${golf ? `<a href="#/games/${G.D.track}/golf">${M.name}</a> › ${esc(g.title)}` : M.name}</div>
+    <div class="game-head">
+      <div><div class="eyebrow">${ic(M.icon)} ${golf ? `Par ${g.golf}${best ? ` · your best ${best}` : ""}` : `${M.name} · ${G.i + 1} of ${G.queue.length}`}</div>
+        <h1 class="page-title">${esc(g.title)}</h1></div>
+      <div class="g-big"><span id="${golf ? "g-chars" : "g-timer"}">${golf ? g.starter.trim().length : clock(elapsed())}</span><small>${golf ? "characters" : "time"}</small></div>
+    </div>
+    <div class="card g-task">${G.mode === "bug" ? `<p class="bug-note">${ic("bug")} This code is broken. Find the bug and fix it!</p>` : ""}${taskHtml(g.task)}</div>
+    <textarea id="g-code" class="code-input" spellcheck="false" autocomplete="off" autocapitalize="off">${esc(G.mode === "bug" ? g.broken : g.starter)}</textarea>
+    <div class="actions">
+      <button class="btn check" data-act="g-check">${ic("play")} Check <kbd>Ctrl+Enter</kbd></button>
+      <button class="btn" data-act="g-reset">${ic("rotate-ccw")} Reset code</button>
+      ${G.mode === "speed" ? `<button class="btn" data-act="g-skip">${ic("skip-forward")} Skip (+30s)</button>` : ""}
+    </div>
+    <div id="results"></div>`;
+}
+
+async function gameCheck() {
+  const btn = $('[data-act="g-check"]');
+  if (!G || busy || !btn) return;
+  busy = true;
+  btn.disabled = true; btn.innerHTML = `<span class="spin"></span> Testing…`;
+  const g = G.queue[G.i], game = G;
+  try {
+    const r = await api("/api/game/check", { track: G.D.track, game: g.id, mode: G.mode, code: $("#g-code").value });
+    if (G !== game) return;  // you left the game while it was being tested
+    renderResults(r, true, { errors: G.D.errors, file: "your code", editor: false });
+    if (!r.passed) return setTimeout(() => btn.classList.add("shake"), r.results.length * 120 + 250);
+    G.D.stats = r.stats;
+    G.xp += r.xp;
+    if (G.mode === "golf") {
+      const under = r.chars <= g.golf;
+      r.stats.new_best && under ? (chime(), confetti()) : chime(true);
+      return toast(`${r.stats.new_best ? "New best" : "Passed"}: ${r.chars} characters${under ? " (under par!)" : ` (par is ${g.golf})`}. +${r.xp} XP`);
+    }
+    G.solved++;
+    chime(true);
+    toast(`${G.mode === "bug" ? "Bug squashed" : "Solved"}! +${r.xp} XP`);
+    setTimeout(() => G === game && nextChallenge(), 900);
+  } catch (e) {
+    toast(e.message);
+  } finally {
+    busy = false;
+    btn.disabled = false; btn.innerHTML = `${ic("play")} Check <kbd>Ctrl+Enter</kbd>`;
+  }
+}
+
+async function nextChallenge() {
+  G.i++;
+  if (G.i < G.queue.length) {
+    $("#view").innerHTML = playScreen();
+    return $("#g-code").focus();
+  }
+  clearInterval(G.timer);
+  const seconds = elapsed(), track = G.D.track, mode = G.mode;
+  let stats = null;
+  if (G.solved) {  // a round where you skipped everything doesn't count
+    const r = await api("/api/game/finish", { track, mode, seconds });
+    stats = r.stats;
+    G.xp += r.xp;
+    chime(); confetti();
+  }
+  $("#view").innerHTML = `<div class="card game-over">
+    <div class="kicker">${GAME_MODES[mode].name.toUpperCase()} COMPLETE</div>
+    <div class="go-time">${clock(seconds)}</div>
+    <div class="sub">${G.solved} of ${G.queue.length} solved${G.penalty ? ` · includes ${G.penalty}s of skips` : ""}</div>
+    ${stats?.new_best ? `<div class="levelup">${ic("trophy")} New best time!</div>` : stats ? `<div class="sub">Your best: ${clock(stats.best[mode])}</div>` : ""}
+    <div class="gain">+${G.xp} XP</div>
+    <div class="btns"><button class="btn primary" data-act="g-again">${ic("rotate-ccw")} Play again</button>
+      <a class="btn" href="#/games/${track}">Back to games</a></div>
+  </div>`;
+}
+
 /* ---------- profiles (yours and your friends', same layout) ---------- */
 const TIERS = [[100, "master", "Mastered"], [66, "gold", "Gold"], [33, "silver", "Silver"], [0, "bronze", "Bronze"]];
 
@@ -1246,6 +1443,18 @@ async function doAct(el) {
       await api("/api/market/remove", { id: el.dataset.id });
       toast("Course removed");
       return render(true);
+    }
+    if (act === "game-course") return go(`#/games/${el.dataset.value}`);
+    if (act === "g-check") return gameCheck();
+    if (act === "g-again") return render();
+    if (act === "g-reset") {
+      const g = G.queue[G.i];
+      $("#g-code").value = G.mode === "bug" ? g.broken : g.starter;
+      return $("#g-code").dispatchEvent(new Event("input", { bubbles: true }));
+    }
+    if (act === "g-skip") {
+      G.penalty += 30;
+      return nextChallenge();
     }
     if (act === "copy-name") {
       await navigator.clipboard.writeText(ME.username);
@@ -1480,21 +1689,23 @@ function failBody(t) {
   return `<div>${esc(t.message)}</div>${t.detail ? `<pre class="detail">${esc(t.detail)}</pre>` : ""}`;
 }
 
-function crashBody(t) {
+// where test results come from: a mission (a file you can open in VS Code) or a game (code typed in the app)
+const missionCtx = () => ({ errors: S.errors, file: S.missions[current - 1].file.split("/").pop(), editor: true });
+
+function crashBody(t, ctx) {
   const e = t.error || {};
-  const explain = S.errors[e.type];
-  const file = S.missions[current - 1].file.split("/").pop();
+  const explain = ctx.errors[e.type];
   return `<div class="err">
       <div><span class="etype">${esc(e.type || "Error")}</span> <span class="emsg">${esc(e.message)}</span></div>
       ${explain ? `<p class="explain">${esc(explain)}</p>` : ""}
-      ${e.line ? `<div class="where">It happened in <b>${esc(file)}</b>, line ${e.line}:</div>
+      ${e.line ? `<div class="where">It happened in <b>${esc(ctx.file)}</b>, line ${e.line}:</div>
         <pre class="line">${esc(e.code)}</pre>
-        <button class="linkbtn" data-line="${e.line}">Jump to line ${e.line} in VS Code →</button>` : ""}
+        ${ctx.editor ? `<button class="linkbtn" data-line="${e.line}">Jump to line ${e.line} in VS Code →</button>` : ""}` : ""}
     </div>
     <details class="raw" style="padding:6px 0 0;border:0"><summary>Full error (traceback)</summary><pre>${esc(t.detail)}</pre></details>`;
 }
 
-function renderResults(r, animate = true) {
+function renderResults(r, animate = true, ctx = missionCtx()) {
   const tests = r.results, passing = tests.filter(t => t.status === "PASS").length;
     const label = { PASS: "", FAIL: "wrong answer", CRASH: "crashed", TODO: "not written yet" };
   const headline = r.passed ? "All tests passing!" : tests.length ? `${passing} of ${tests.length} tests passing` : "No test output";
@@ -1507,7 +1718,7 @@ function renderResults(r, animate = true) {
           <span class="ic">${ic({ PASS: "circle-check", FAIL: "circle-x", CRASH: "triangle-alert", TODO: "circle-dashed" }[t.status])}</span>
           <span class="tn">${esc(human(t.name))}<small>${label[t.status]}</small></span>
           ${t.status === "FAIL" ? `<div class="body">${failBody(t)}</div>` : ""}
-          ${t.status === "CRASH" ? `<div class="body">${crashBody(t)}</div>` : ""}
+          ${t.status === "CRASH" ? `<div class="body">${crashBody(t, ctx)}</div>` : ""}
         </div>`).join("")}
       ${!r.passed ? `<div class="r-head tip"><span>Tip: fix the <b>first</b> problem, save, and check again. One thing at a time.</span></div>` : ""}
       <details class="raw"><summary>Raw test output</summary><pre>${esc(r.output)}</pre></details>
@@ -1679,14 +1890,23 @@ document.addEventListener("click", e => {
 });
 document.addEventListener("keydown", e => {
   if (e.key === "Enter" && (e.ctrlKey || e.metaKey) && route.page === "course") { e.preventDefault(); check(); }
+  if (e.key === "Enter" && (e.ctrlKey || e.metaKey) && G) { e.preventDefault(); gameCheck(); }
+  if (e.key === "Tab" && e.target.id === "g-code") {  // Tab indents (4 spaces) instead of leaving the box
+    e.preventDefault();
+    e.target.setRangeText("    ", e.target.selectionStart, e.target.selectionEnd, "end");
+    e.target.dispatchEvent(new Event("input", { bubbles: true }));
+  }
   if (e.key === "Escape") { $("#win").classList.add("hidden"); $("#code-view").classList.add("hidden"); }
+});
+document.addEventListener("input", e => {
+  if (e.target.id === "g-code" && $("#g-chars")) $("#g-chars").textContent = e.target.value.trim().length;
 });
 window.addEventListener("hashchange", () => render());
 // coming back from VS Code: refresh in case files changed
 window.addEventListener("focus", async () => {
   // Skip pages with forms: re-rendering would wipe half-typed text, and on the profile page it would
   // throw away the file box just as the picture picker closes (so the chosen picture got lost).
-  if (busy || !ME.signed_in || ["profile", "friends", "settings"].includes(route.page)) return;
+  if (busy || !ME.signed_in || ["profile", "friends", "settings", "games"].includes(route.page)) return;
   if (route.page === "course" && S) {
     S = await api(`/api/state?track=${encodeURIComponent(S.track)}`);
     renderSide();

@@ -1,0 +1,21 @@
+title: Checkout
+golf: 38
+
+Write `total_price(cart)` that adds up the prices in a cart.
+The cart is a dict of item name to price: `{"apple": 2, "bread": 3}` gives `5`.
+=== starter
+def total_price(cart):
+    ...
+=== broken
+def total_price(cart):
+    total = 0
+    for item in cart:
+        total += item
+    return total
+=== test
+from harness import eq
+
+
+def test_total_price(sol):
+    eq(sol.total_price({"apple": 2, "bread": 3}), 5, 'total_price({"apple": 2, "bread": 3})')
+    eq(sol.total_price({}), 0, "total_price({})")
