@@ -257,6 +257,19 @@
   .hero:hover { border-color: var(--hover-line); }
   .avatar.hero-av { width: 96px; height: 96px; font-size: 42px; }
   .hero-hi { font: 700 34px/1.15 var(--display); letter-spacing: -.4px; margin-bottom: 4px; }
+  .hero > div:last-child, .ph-text { flex: 1; min-width: 0; }
+
+  /* player level (from total XP) */
+  .level { margin-top: 14px; max-width: 460px; }
+  .level .lv-top { display: flex; align-items: baseline; gap: 10px; margin-bottom: 7px; font-size: 13px; color: var(--muted); }
+  .level .lv-top b { font: 700 17px var(--display); color: var(--text); }
+  .level .lv-top .spacer { flex: 1; }
+  .level .bar { height: 8px; border-radius: 99px; background: var(--line); overflow: hidden; }
+  .level .bar div { height: 100%; border-radius: 99px; background: linear-gradient(90deg, var(--gold), var(--gold-hi)); }
+  .lv-chip { font: 700 11.5px var(--mono); color: var(--gold-hi); padding: 2px 7px; border-radius: 6px;
+             background: color-mix(in srgb, var(--gold) 14%, transparent); white-space: nowrap; }
+  .win .levelup { margin: 8px auto 4px; padding: 9px 18px; border-radius: 12px; font-weight: 700; display: inline-block;
+                  color: var(--gold-hi); border: 1px solid var(--gold); background: color-mix(in srgb, var(--gold) 12%, transparent); }
 
   /* profile */
   .profile-head { display: flex; align-items: center; gap: 26px; padding: 26px 28px; }
@@ -548,6 +561,7 @@
     <div class="kicker">MISSION COMPLETE</div>
     <h2 id="win-title"></h2>
     <div class="gain">+<span id="win-xp">0</span> XP</div>
+    <div id="win-level" class="levelup" hidden></div>
     <div id="win-rank" class="rankup" hidden></div>
     <div id="win-ach" class="win-ach"></div>
     <div class="btns">
@@ -604,6 +618,22 @@ function chapters(missions) {
   return groups;
 }
 const doneCount = ms => ms.filter(m => m.status === "done").length;
+const totalXp = ov => ov.courses.reduce((s, c) => s + c.xp, 0);
+
+// Levels come from total XP across every course. Each level costs 25 XP more than the last
+// (level 2 at 100 XP, level 3 at 225, ...), so finishing Python lands you around level 14.
+function levelOf(xp) {
+  let level = 1, cost = 100;
+  while (xp >= cost) { xp -= cost; level++; cost += 25; }
+  return { level, into: xp, need: cost };
+}
+const lvChip = xp => `<span class="lv-chip" title="${xp} XP">Lv ${levelOf(xp).level}</span>`;
+function levelBar(xp) {
+  const L = levelOf(xp);
+  return `<div class="level"><div class="lv-top"><b>Level ${L.level}</b><span>${xp.toLocaleString()} XP</span><span class="spacer"></span>
+    <span>${L.need - L.into} XP to level ${L.level + 1}</span></div>
+    <div class="bar"><div style="width:${pct(L.into, L.need)}%"></div></div></div>`;
+}
 const nextMission = ms => ms.find(m => m.status !== "done");
 const isoOf = t => `${t.getFullYear()}-${String(t.getMonth() + 1).padStart(2, "0")}-${String(t.getDate()).padStart(2, "0")}`;
 const todayIso = () => isoOf(new Date());
@@ -763,7 +793,7 @@ const GREETING = (() => {
 function statTiles(ov) {
   const ach = achievements(ov);
   return `<div class="stats">
-    <div class="stat"><div class="v gold">${ov.courses.reduce((s, c) => s + c.xp, 0)}</div><div class="l">Total XP</div></div>
+    <div class="stat"><div class="v gold">${totalXp(ov)}</div><div class="l">Total XP</div></div>
     <div class="stat"><div class="v">${doneCount(ov.courses.flatMap(c => c.missions))}</div><div class="l">Missions completed</div></div>
     <div class="stat"><div class="v">${streaks(activeDays(ov)).current} ${ic("flame", "flame")}</div><div class="l">Day streak</div></div>
     <div class="stat"><div class="v">${ach.filter(a => a.got).length}<span style="font-size:16px;color:var(--faint)"> / ${ach.length}</span></div><div class="l">Achievements</div></div>
@@ -804,7 +834,8 @@ function dashboardPage() {
     <a class="hero" href="#/profile" title="Your profile">
       ${avatar(ME.username, ME.avatar, "hero-av")}
       <div><div class="hero-hi">${GREETING}, ${esc(ME.username)}!</div>
-        <div class="sub">${course ? "Pick up where you left off. One mission a day adds up fast." : "Learn to code by building real things, one mission at a time."}</div></div>
+        <div class="sub">${course ? "Pick up where you left off. One mission a day adds up fast." : "Learn to code by building real things, one mission at a time."}</div>
+        ${levelBar(totalXp(O))}</div>
     </a>
     ${statTiles(O)}
     <div class="section-title">Continue learning</div>
@@ -1022,7 +1053,7 @@ function friendCard(f) {
   return `<div class="card friend-card">
     <a class="fc-top" href="#/u/${encodeURIComponent(f.username)}">
       <span class="fc-av">${avatar(f.username, f.avatar, "big")}<span class="presence ${seen.on ? "on" : ""}"></span></span>
-      <span class="fc-name"><b>${esc(f.username)}</b><small>${main ? `${esc(main.name)} · ${esc(main.rank)}` : "Just getting started"}</small></span>
+      <span class="fc-name"><b>${esc(f.username)} ${lvChip(f.xp)}</b><small>${main ? `${esc(main.name)} · ${esc(main.rank)}` : "Just getting started"}</small></span>
     </a>
     <div class="fc-stats">
       <span><b>${f.xp}</b> XP</span><span><b>${f.done}</b> missions</span><span>${ic("flame", "flame")} <b>${f.streak}</b> day${f.streak === 1 ? "" : "s"}</span>
@@ -1075,14 +1106,14 @@ function activityTab(f) {
 let boardRange = "all";
 function leaderboardTab(f, ov) {
   const key = boardRange === "week" ? "week_xp" : "xp";
-  const me = { username: ME.username, avatar: ME.avatar, you: true, xp: ov.courses.reduce((t, c) => t + c.xp, 0), week_xp: f.my_week_xp };
+  const me = { username: ME.username, avatar: ME.avatar, you: true, xp: totalXp(ov), week_xp: f.my_week_xp };
   const board = [...f.friends, me].sort((a, b) => b[key] - a[key]);
   return `
     <div class="seg board-range">${[["all", "All time"], ["week", "This week"]].map(([v, l]) =>
       `<button class="${boardRange === v ? "on" : ""}" data-act="board-range" data-value="${v}">${l}</button>`).join("")}</div>
     <div class="card">${board.map((p, i) => `
       <div class="person ${p.you ? "you" : ""}"><span class="place p${i + 1}">${i < 3 ? ic("medal") : ""}#${i + 1}</span>${avatar(p.username, p.avatar)}
-        <b>${esc(p.username)}${p.you ? " (you)" : ""}</b><span class="spacer"></span><span class="xpv">${p[key]} XP</span>
+        <b>${esc(p.username)}${p.you ? " (you)" : ""}</b>${lvChip(p.xp)}<span class="spacer"></span><span class="xpv">${p[key]} XP</span>
         <a class="btn small" href="${p.you ? "#/profile" : `#/u/${encodeURIComponent(p.username)}`}">${p.you ? "Your profile" : "View profile"}</a></div>`).join("")}
       ${f.friends.length ? "" : `<div class="empty">Add friends to compete with them here.</div>`}</div>`;
 }
@@ -1155,6 +1186,7 @@ function profileView(person, ov, isMe) {
       <div class="ph-text">
         <h1>${name}</h1>
         <div class="sub">${facts.filter(Boolean).join("  ·  ")}</div>
+        ${levelBar(totalXp(ov))}
         <div class="ph-actions">${actions}</div>
       </div>
     </div>
@@ -1509,7 +1541,8 @@ async function check() {
   busy = true;
   btn.disabled = true; btn.innerHTML = `<span class="spin"></span> Running tests…`;
   try {
-    const hadBadges = new Set(achievements(await getOverview()).filter(a => a.got).map(a => a.title));
+    const ovBefore = await getOverview();
+    const hadBadges = new Set(achievements(ovBefore).filter(a => a.got).map(a => a.title));
     const r = await api("/api/check", { track: S.track, mission: current });
     const before = r.before;
     S = r.state;
@@ -1520,7 +1553,8 @@ async function check() {
     const delay = r.results.length * 120 + 250;
     if (r.first_time) {
       const fresh = achievements(await getOverview()).filter(a => a.got && !hadBadges.has(a.title));
-      setTimeout(() => celebrate(before, fresh), delay);
+      const total = totalXp(ovBefore);
+      setTimeout(() => celebrate(before, fresh, [levelOf(total).level, levelOf(total + S.xp - before.xp).level]), delay);
     }
     else if (r.passed) setTimeout(() => { chime(true); toast("Still passing"); }, delay);
     else setTimeout(() => $("#check")?.classList.add("shake"), delay);
@@ -1532,11 +1566,13 @@ async function check() {
   }
 }
 
-function celebrate(before, badges) {
+function celebrate(before, badges, [oldLevel, newLevel]) {
   const m = S.missions[current - 1];
   chime();
   confetti();
   $("#win-title").textContent = m.title;
+  $("#win-level").hidden = oldLevel === newLevel;
+  $("#win-level").innerHTML = `${ic("chevrons-up")} Level up! You're level ${newLevel}`;
   $("#win-rank").hidden = before.rank === S.rank;
   $("#win-rank").innerHTML = `${ic("trending-up")} Rank up: ${esc(S.rank)}`;
   $("#win-ach").innerHTML = badges.map(a => `<div>${a.icon} Achievement unlocked: ${esc(a.title)}</div>`).join("");
