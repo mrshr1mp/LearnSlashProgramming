@@ -370,6 +370,7 @@ class Handler(BaseHTTPRequestHandler):
                 return self.send(me())
             if action == "/api/signin":
                 cloud.sign_in(body.get("email", ""), body.get("password", ""))
+                cloud.restore()  # on a new computer, your progress comes back from your account
                 cloud.sync()
                 return self.send(me())
             if action == "/api/signout":
@@ -506,7 +507,7 @@ def main():
         print("\n  Another copy is running and wouldn't close. Close every learn/programming console window and try again.\n")
         return open_window(url)
     print(f"\n  learn/programming ({VERSION}) is running at {url}\n  Close this window to quit.\n")
-    cloud.sync_in_background()  # catch up on anything finished while offline
+    cloud.sync_in_background(restore_first=True)  # fill in from your account, then upload anything new
     updates.check_in_background()  # first check right away, without making the window wait for GitHub
     quit_when_window_closed(server)
     if "--no-window" not in sys.argv:  # after an in-app update, the old window just reloads

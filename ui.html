@@ -41,11 +41,11 @@
   ::-webkit-scrollbar-thumb { background: var(--line-2); border-radius: 10px; border: 2px solid var(--bg); }
   ::-webkit-scrollbar-track { background: transparent; }
 
-  .app { display: grid; grid-template-columns: 300px 1fr; height: 100vh; }
+  .app { display: grid; grid-template-columns: clamp(210px, 24vw, 300px) 1fr; height: 100vh; }
 
   /* ---------- sidebar ---------- */
   .side { background: var(--side); border-right: 1px solid var(--line); display: flex; flex-direction: column; min-height: 0; }
-  .brand { display: flex; align-items: center; gap: 10px; padding: 20px 20px 12px; font-family: var(--display); font-weight: 700; font-size: 17px; }
+  .brand { display: flex; align-items: center; gap: 10px; padding: 20px 20px 12px; font-family: var(--display); font-weight: 700; font-size: 17px; white-space: nowrap; }
   .logo { width: 30px; height: 30px; border-radius: 8px; display: grid; place-items: center; font: 700 13px var(--mono); background: var(--accent); }
   .brand span { color: var(--accent-hi); }
   .nav { display: flex; flex-direction: column; gap: 2px; padding: 4px 10px 10px; border-bottom: 1px solid var(--line); }
@@ -103,7 +103,9 @@
   .main::before { content: ""; position: absolute; inset: 0; height: 380px; pointer-events: none;
                   background-image: linear-gradient(#ffffff05 1px, transparent 1px), linear-gradient(90deg, #ffffff05 1px, transparent 1px);
                   background-size: 32px 32px; mask-image: linear-gradient(180deg, #000, transparent); -webkit-mask-image: linear-gradient(180deg, #000, transparent); }
-  .wrap { max-width: 900px; margin: 0 auto; padding: 34px 40px 120px; position: relative; }
+  .wrap { max-width: 900px; margin: 0 auto; padding: clamp(20px, 3vw, 34px) clamp(16px, 3.5vw, 40px) 120px; position: relative; }
+  .wrap.wide { max-width: 1240px; }
+  @media (min-width: 1600px) { .wrap { max-width: 1040px; } .wrap.wide { max-width: 1400px; } }
   .crumbs { font-size: 13.5px; color: var(--faint); margin-bottom: 14px; }
   .crumbs a { color: var(--muted); }
   .crumbs a:hover { color: var(--text); }
@@ -128,7 +130,8 @@
   .stat .v.gold { color: var(--gold-hi); }
   .stat .l { font-size: 13px; color: var(--muted); }
   .continue { display: grid; grid-template-columns: 1fr auto; gap: 18px 24px; align-items: center; background: linear-gradient(135deg, color-mix(in srgb, var(--accent) 10%, var(--surface)), var(--surface) 60%); }
-  .continue .top { display: flex; align-items: center; gap: 14px; }
+  .continue .top { display: flex; align-items: center; gap: 14px; min-width: 0; }
+  .continue > .btn { justify-self: start; }
   .icon-tile { width: 52px; height: 52px; flex: none; border-radius: 14px; display: grid; place-items: center; font-size: 28px; background: var(--raised); border: 1px solid var(--line-2); }
   .continue h3 { margin: 0; font: 700 22px var(--display); }
   .continue .sub { color: var(--muted); font-size: 14px; }
@@ -151,7 +154,7 @@
   .hm-top .streak b { color: var(--gold-hi); }
   .hm { max-width: 780px; min-width: 0; }
   .hm-body > *, .hm-grid { min-width: 0; }  /* let the grid shrink in narrow windows instead of spilling out */
-  .hm-months, .hm-grid { display: grid; grid-template-columns: repeat(var(--weeks), 1fr); gap: 4px; }
+  .hm-months, .hm-grid { display: grid; grid-template-columns: repeat(var(--weeks), minmax(0, 1fr)); gap: clamp(2px, .4vw, 4px); }
   .hm-months { margin-left: 38px; margin-bottom: 4px; font-size: 11.5px; color: var(--muted); height: 16px; }
   .hm-months span { white-space: nowrap; overflow: visible; }
   .hm-body { display: flex; gap: 8px; }
@@ -218,9 +221,9 @@
   .auth-box .form h3 { font-size: 24px; }
   .auth-box .form .sub { margin: -8px 0 4px; }
   .auth-box .form .btn { justify-content: center; padding: 11px; }
-  .switch { text-align: center; color: var(--muted); font-size: 14.5px; margin-top: 18px; }
-  .switch button { background: none; border: 0; color: var(--accent-hi); font-weight: 600; cursor: pointer; padding: 0 2px; }
-  .switch button:hover { text-decoration: underline; }
+  .auth-switch { text-align: center; color: var(--muted); font-size: 14.5px; margin-top: 18px; }
+  .auth-switch button { background: none; border: 0; color: var(--accent-hi); font-weight: 600; cursor: pointer; padding: 0 2px; }
+  .auth-switch button:hover { text-decoration: underline; }
   .auth-note { text-align: center; color: var(--faint); font-size: 13px; margin-top: 22px; line-height: 1.5; }
   img.avatar { object-fit: cover; padding: 0; }
   .avatar.huge { width: 96px; height: 96px; font-size: 40px; }
@@ -466,7 +469,7 @@
   .profile-head { display: flex; align-items: center; gap: 26px; padding: 26px 28px; }
   .avatar.jumbo { width: 128px; height: 128px; font-size: 56px; }
   .ph-text h1 { margin: 0 0 4px; font: 700 38px/1.1 var(--display); letter-spacing: -.5px; word-break: break-word; }
-  .ph-actions { display: flex; gap: 8px; margin-top: 14px; flex-wrap: wrap; }
+  .ph-actions { display: flex; gap: 10px; margin-top: 16px; flex-wrap: wrap; }
   .ph-actions .btn { cursor: pointer; }
   .lang-badges { display: flex; gap: 14px; flex-wrap: wrap; }
   .lang-badge { --tier: #cd7f32; width: 172px; padding: 20px 14px 16px; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 2px;
@@ -513,7 +516,7 @@
   .fc-stats b { color: var(--text); }
   .fc-seen { font-size: 13px; color: var(--faint); }
   .fc-seen.on { color: var(--pass); }
-  .fc-actions { display: flex; align-items: center; justify-content: space-between; margin-top: auto; }
+  .fc-actions { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: auto; padding-top: 6px; }
   .empty-state { text-align: center; padding: 34px 20px; display: flex; flex-direction: column; align-items: center; gap: 8px; }
   .empty-state h3 { margin: 4px 0 0; font: 700 20px var(--display); }
   .empty-state .btn { margin-top: 8px; }
@@ -705,8 +708,17 @@
   .win .btns { display: flex; gap: 10px; justify-content: center; margin-top: 24px; flex-wrap: wrap; }
   canvas#fx { position: fixed; inset: 0; pointer-events: none; z-index: 50; }
 
-  @media (max-width: 900px) { .stats { grid-template-columns: repeat(2, 1fr); } .two { grid-template-columns: 1fr; } }
-  @media (max-width: 820px) {
+  @media (max-width: 1100px) {
+    .nav a { padding: 8px 10px; gap: 10px; font-size: 14.5px; }
+    .brand { font-size: 15px; gap: 8px; padding: 18px 14px 10px; }
+    .hero-hi { font-size: 28px; }
+    .avatar.hero-av { width: 76px; height: 76px; font-size: 34px; }
+  }
+  @media (max-width: 900px) {
+    .stats { grid-template-columns: repeat(2, 1fr); } .two { grid-template-columns: 1fr; }
+    .continue { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 640px) {
     body { overflow: auto; }
     .app { grid-template-columns: 1fr; height: auto; }
     .side { border-right: 0; border-bottom: 1px solid var(--line); }
@@ -937,6 +949,7 @@ setInterval(async () => {
 async function render(keepScroll = false) {
   route = parseRoute();
   stopGame();
+  $("#view").classList.toggle("wide", ["games", "party"].includes(route.page));
   if (route.page !== "party") partyLeave();
   const navPage = { course: "courses", user: "friends", party: "games" }[route.page] || route.page;
   document.querySelectorAll(".nav a").forEach(a => a.classList.toggle("active", a.dataset.page === navPage));
@@ -1194,13 +1207,13 @@ function authScreen() {
         <label>Email<input name="email" type="email" required autocomplete="email" autofocus></label>
         <label>Password<input name="password" type="password" required autocomplete="current-password"></label>
         <button class="btn primary">Sign in</button></form>
-      <div class="switch">Don't have an account? <button data-act="auth-switch">Register</button></div>`
+      <div class="auth-switch">Don't have an account? <button data-act="auth-switch">Register</button></div>`
     : `<form class="card form" data-form="signup"><h3>Create your account</h3><p class="sub">Free, and it takes 20 seconds.</p>
         <label>Username <small>(friends find you by this)</small><input name="username" required pattern="[A-Za-z0-9_]{3,20}" title="3-20 letters, numbers or _" autocomplete="username" autofocus></label>
         <label>Email<input name="email" type="email" required autocomplete="email"></label>
         <label>Password <small>(8+ characters)</small><input name="password" type="password" required minlength="8" autocomplete="new-password"></label>
         <button class="btn primary">Create account</button></form>
-      <div class="switch">Already have an account? <button data-act="auth-switch">Sign in</button></div>`;
+      <div class="auth-switch">Already have an account? <button data-act="auth-switch">Sign in</button></div>`;
   return `<div class="auth-box">
     <div class="auth-brand"><div class="logo">&gt;_</div>learn<span>/</span>programming</div>
     ${form}
@@ -1494,14 +1507,16 @@ function placeBot(s, animate = true) {
   bot.querySelector(".bot-dir").style.transform = `rotate(${G.angle}deg)`;
 }
 
-// replay the robot's moves; resolves false if you leave the page midway
+// replay the robot's moves; resolves false if you press Stop or leave the page midway
 function playSteps(m) {
   const game = G;
+  // a robot stuck in an endless loop used up its whole battery (hundreds of steps): show the first few, then say so
+  const last = m.crash?.reason === "battery" ? Math.min(m.steps.length, 24) : m.steps.length;
   return new Promise(resolve => {
     let i = 0;
     const step = () => {
-      if (G !== game) return resolve(false);
-      if (i >= m.steps.length) return resolve(true);
+      if (G !== game || G.stopped) return resolve(false);
+      if (i >= last) return resolve(true);
       const s = m.steps[i++], bot = $("#bot");
       placeBot(s);
       if (s.action === "collect") {
@@ -1525,16 +1540,21 @@ async function robotRun() {
   const game = G, code = $("#g-code").value;
   store.set(`robot:${G.D.track}:${G.L.id}`, code);
   busy = true;
+  G.stopped = false;
   btn.disabled = true; btn.innerHTML = `<span class="spin"></span> Running…`;
   $("#robot-msg").innerHTML = "";
   try {
     const r = await api("/api/game/robot", { track: G.D.track, level: G.L.id, code });
     if (G !== game) return;
     if (r.problem) return robotMsg("r-fail", `<b>${ic("triangle-alert")} Your code didn't run</b><pre>${esc(r.problem)}</pre>`);
+    btn.disabled = false; btn.dataset.act = "robot-stop"; btn.innerHTML = `${ic("square")} Stop`;  // while it drives
     for (let w = 0; w < r.maps.length; w++) {
       drawWorld(w);
       await sleep(250);
-      if (!await playSteps(r.maps[w])) return;
+      if (!await playSteps(r.maps[w])) {
+        if (G === game) robotMsg("r-ok", `${ic("square")} Stopped. Change your code and run it again.`);
+        return;
+      }
       if (!r.maps[w].won) return robotFail(r.maps[w], w, r.maps.length);
       if (w < r.maps.length - 1) { robotMsg("r-ok", `${ic("check")} World ${w + 1} done! On to world ${w + 2}…`); await sleep(700 / G.speed); }
     }
@@ -1543,7 +1563,7 @@ async function robotRun() {
     toast(e.message);
   } finally {
     busy = false;
-    btn.disabled = false; btn.innerHTML = `${ic("play")} Run <kbd>Ctrl+Enter</kbd>`;
+    btn.disabled = false; btn.dataset.act = "robot-run"; btn.innerHTML = `${ic("play")} Run <kbd>Ctrl+Enter</kbd>`;
   }
 }
 
@@ -2260,6 +2280,7 @@ async function doAct(el) {
     }
     if (act === "game-course") return go(`#/games/${el.dataset.value}`);
     if (act === "robot-run") return robotRun();
+    if (act === "robot-stop") return void (G.stopped = true);
     if (act === "robot-reset") return void ($("#g-code").value = G.L.starter);
     if (act === "robot-world") return busy || drawWorld(+el.dataset.value);
     if (act === "robot-speed") {

@@ -203,9 +203,57 @@ def sync():
     status.update(synced_at=time.time(), error=None)
 
 
-def sync_in_background():
+def restore():
+    """Bring back what your account has saved, for a new computer or a fresh install: finished missions (with
+    their dates), daily activity, game XP and best scores, the courses they belong to, and code you shared.
+    Only ever adds: nothing already on this computer is changed or removed."""
+    s = session()
+    if not s:
+        return
+    _check_owner(s["user_id"])  # never pull one person's progress onto another person's computer
+    _claim(s)
+    uid = s["user_id"]
+    completions, activity, games, solutions = _parallel(
+        f"completions?select=track,mission_id,completed_on&user_id=eq.{uid}",
+        f"activity?select=day,checks&user_id=eq.{uid}",
+        f"game_stats?select=track,xp,best&user_id=eq.{uid}",
+        f"solutions?select=track,mission_id,filename,code&user_id=eq.{uid}")
+    for track in {c["track"] for c in completions} - set(learn.tracks()):
+        try:  # a course you'd started elsewhere: add it from the marketplace
+            learn.install_course(track, *download(track))
+        except (CloudError, ValueError):
+            pass
+    progress = learn.load_progress()
+    logged = {(h["track"], h["id"]) for h in progress.get("_history", [])}
+    for c in completions:
+        done = progress.setdefault(c["track"], [])
+        if c["mission_id"] not in done:
+            done.append(c["mission_id"])
+        if (c["track"], c["mission_id"]) not in logged:
+            progress.setdefault("_history", []).append({"track": c["track"], "id": c["mission_id"], "date": c["completed_on"]})
+    checks = progress.setdefault("_checks", {})
+    for a in activity:
+        checks[a["day"]] = max(checks.get(a["day"], 0), a["checks"])
+    for g in games:
+        mine = progress.setdefault("_games", {}).setdefault(g["track"], {"xp": 0, "best": {}})
+        mine["xp"] = max(mine["xp"], g["xp"])
+        for key, score in g["best"].items():
+            mine["best"][key] = max(mine["best"].get(key, score), score)
+    learn.save_progress(progress)
+    files = {(t, m["id"]): m["file"] for t in learn.tracks() for m in learn.missions(t)}
+    for sol in solutions:
+        name = files.get((sol["track"], sol["mission_id"]))
+        target = name and learn.WORK / sol["track"] / name
+        if target and not target.exists():  # your code from the other computer, unless you've got your own here
+            target.parent.mkdir(parents=True, exist_ok=True)
+            target.write_text(sol["code"], encoding="utf-8")
+
+
+def sync_in_background(restore_first=False):
     def run():
         try:
+            if restore_first:
+                restore()
             sync()
         except CloudError as e:
             status["error"] = str(e)
